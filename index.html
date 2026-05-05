@@ -6,7 +6,6 @@
 <title>MedLearn — Gamified Medical Learning Platform</title>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-const API_BASE = "https://medlearn-api-wjyh.onrender.com";
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -260,7 +259,85 @@ const API_BASE = "https://medlearn-api-wjyh.onrender.com";
     .main-content { margin-left: 0; }
     .g2,.g3,.g4 { grid-template-columns: 1fr; }
   }
+
+  /* ====== ADAPTIVE LEARNING SYSTEM ====== */
+  .roadmap-wrap { position: relative; padding: 0 0 40px; }
+  .roadmap-spine {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    width: 3px; top: 0; bottom: 0;
+    background: linear-gradient(to bottom, var(--accent), var(--accent2), var(--accent4));
+    opacity: 0.25; border-radius: 3px;
+  }
+  .roadmap-node-row {
+    display: flex; align-items: center; gap: 0;
+    margin-bottom: 28px; position: relative;
+  }
+  .roadmap-node-row:nth-child(even) { flex-direction: row-reverse; }
+  .roadmap-node-row:nth-child(even) .node-content { text-align: right; align-items: flex-end; }
+  .node-center { width: 80px; flex-shrink: 0; display: flex; justify-content: center; z-index: 2; }
+  .node-circle {
+    width: 60px; height: 60px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; border: 3px solid; cursor: pointer;
+    transition: all .25s; position: relative;
+  }
+  .node-circle:hover { transform: scale(1.12); }
+  .node-circle.skip  { border-color: var(--success); background: rgba(52,211,153,0.15); box-shadow: 0 0 16px rgba(52,211,153,0.3); }
+  .node-circle.light { border-color: var(--warn);    background: rgba(251,191,36,0.15);  box-shadow: 0 0 16px rgba(251,191,36,0.3); }
+  .node-circle.deep  { border-color: var(--accent);  background: rgba(56,189,248,0.15);  box-shadow: 0 0 16px rgba(56,189,248,0.3); }
+  .node-circle.done  { border-color: var(--accent3); background: rgba(52,211,153,0.25);  box-shadow: 0 0 20px rgba(52,211,153,0.5); }
+  .node-circle.locked{ border-color: var(--text3);   background: rgba(100,116,139,0.1);  opacity: 0.45; cursor: not-allowed; }
+  @keyframes nodeGlow { 0%,100%{box-shadow:0 0 10px rgba(56,189,248,0.5);} 50%{box-shadow:0 0 24px rgba(56,189,248,0.9);} }
+  .node-circle.active-node { animation: nodeGlow 2s infinite; }
+  .node-content { flex: 1; display: flex; flex-direction: column; gap: 4px; padding: 0 12px; }
+  .node-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 14px 16px;
+    transition: all .2s; cursor: pointer; max-width: 380px;
+  }
+  .node-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+  .node-card.skip-card  { border-color: rgba(52,211,153,0.35); }
+  .node-card.light-card { border-color: rgba(251,191,36,0.35); }
+  .node-card.deep-card  { border-color: rgba(56,189,248,0.35); }
+  .node-card.done-card  { border-color: rgba(52,211,153,0.6);  }
+
+  /* Lesson view */
+  .lesson-header { border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 20px; }
+  .lesson-section-label {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--accent); margin-bottom: 8px;
+  }
+  .keyfact { display: flex; gap: 10px; padding: 9px 12px; background: var(--bg3); border-radius: 6px; margin-bottom: 6px; font-size: 13px; line-height: 1.5; }
+  .mnemonic-box { background: rgba(129,140,248,0.08); border: 1px solid rgba(129,140,248,0.3); border-radius: var(--r2); padding: 14px 16px; font-size: 13px; line-height: 1.7; }
+  .clinical-box { background: rgba(56,189,248,0.06); border-left: 3px solid var(--accent); padding: 12px 16px; font-size: 13px; line-height: 1.7; border-radius: 0 var(--r2) var(--r2) 0; }
+  .lesson-progress { display: flex; gap: 6px; align-items: center; margin-bottom: 20px; }
+  .lp-step { height: 4px; flex: 1; border-radius: 2px; background: var(--bg4); transition: background .3s; }
+  .lp-step.done-step { background: var(--success); }
+  .lp-step.cur-step  { background: var(--accent); }
+
+  /* Assessment */
+  .assess-goal-card { cursor: pointer; text-align: center; padding: 20px 14px; transition: all .2s; border: 2px solid var(--border); }
+  .assess-goal-card:hover  { border-color: var(--accent); background: rgba(56,189,248,0.06); }
+  .assess-goal-card.selected-goal { border-color: var(--accent); background: rgba(56,189,248,0.12); }
+  .diff-tag {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  }
+  .diff-easy   { background: rgba(52,211,153,0.2);  color: var(--success); }
+  .diff-medium { background: rgba(251,191,36,0.2);  color: var(--warn); }
+  .diff-hard   { background: rgba(248,113,113,0.2); color: var(--danger); }
+  .diff-tricky { background: rgba(244,114,182,0.2); color: var(--accent4); }
+
+  /* Strength/weakness bars */
+  .topic-score-bar { margin-bottom: 12px; }
+  .tsb-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+  .tsb-bar { height: 8px; background: var(--bg4); border-radius: 4px; overflow: hidden; }
+  .tsb-fill { height: 100%; border-radius: 4px; transition: width .8s cubic-bezier(.4,0,.2,1); }
 </style>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 <div id="root"></div>
@@ -593,6 +670,7 @@ function PreQuiz({ onComplete }) {
 function Sidebar({ page, setPage, user, onLogout }) {
   const nav = [
     { id:"dashboard", icon:"📊", label:"Dashboard" },
+    { id:"learning", icon:"🗺️", label:"Learning" },
     { id:"simulation", icon:"🏥", label:"Simulation" },
     { id:"quiz", icon:"🧠", label:"Quiz" },
     { id:"multiplayer", icon:"👥", label:"Multiplayer" },
@@ -985,301 +1063,527 @@ function Simulation({ user, updateUser }) {
   return null;
 }
 
-/* ==================== QUIZ ==================== */
+/* ==================== QUIZ (ML-POWERED) ==================== */
+const ML_API = 'http://localhost:5001';
+
 function Quiz({ user, updateUser }) {
-  const [mode, setMode] = useState("select"); // select | quiz | result
-  const [difficulty, setDifficulty] = useState(user.preQuizLevel||"beginner");
-  const [questions, setQuestions] = useState([]);
-  const [step, setStep] = useState(0);
-  const [selected, setSelected] = useState(null);
-  const [revealed, setRevealed] = useState(false);
-  const [results, setResults] = useState([]);
+  const [mode, setMode] = React.useState('select');
+  const [topic, setTopic] = React.useState('all');
+  const [level, setLevel] = React.useState('beginner');
+  const [sessionId, setSessionId] = React.useState(null);
+  const [question, setQuestion] = React.useState(null);
+  const [selected, setSelected] = React.useState(null);
+  const [revealed, setRevealed] = React.useState(false);
+  const [feedback, setFeedback] = React.useState(null);
+  const [summary, setSummary] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+  const [apiOnline, setApiOnline] = React.useState(null);
+  const [levelChange, setLevelChange] = React.useState(null);
 
-  function startQuiz() {
-    const pool = QUIZ_QUESTIONS.filter(q=>q.difficulty===difficulty||difficulty==="all");
-    const shuffled = [...pool].sort(()=>Math.random()-.5).slice(0,Math.min(pool.length,7));
-    setQuestions(shuffled); setStep(0); setSelected(null); setRevealed(false); setResults([]); setMode("quiz");
-  }
+  const TOPICS = ['all','Anatomy','Physiology','Pharmacology','Pathology','Microbiology','Biochemistry','Clinical Medicine','Surgery'];
 
-  function reveal() {
-    if (selected===null) return;
-    setRevealed(true);
-  }
+  React.useEffect(() => {
+    fetch(ML_API + '/api/ml/status')
+      .then(r => r.json())
+      .then(d => setApiOnline(d))
+      .catch(() => setApiOnline(false));
+  }, []);
 
-  function next() {
-    const correct = selected === questions[step].ans;
-    const newResults = [...results, { q: questions[step], selected, correct }];
-    if (step < questions.length-1) {
-      setResults(newResults); setSelected(null); setRevealed(false); setStep(s=>s+1);
-    } else {
-      setResults(newResults);
-      const score = newResults.filter(r=>r.correct).length;
-      const pct = Math.round(score/questions.length*100);
-      const pts = score * 50;
-      updateUser({
-        score: user.score + pts,
-        xp: user.xp + pts * 0.3,
-        quizScores: [...(user.quizScores||[]), { score:pct, difficulty, date:new Date().toLocaleDateString() }],
-        totalAnswers: user.totalAnswers + questions.length,
-        correctAnswers: user.correctAnswers + score
+  async function startQuiz() {
+    setLoading(true); setLevelChange(null);
+    try {
+      const r = await fetch(ML_API + '/api/ml/quiz/start', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ level, topic: topic === 'all' ? null : topic, n_questions: 10, adaptive: true })
       });
-      if (pct < 40) notify("Consider mentorship — you scored below 40%", "warn");
-      else if (pct === 100) notify("Perfect score! 🎉", "success");
-      setMode("result");
-    }
+      const d = await r.json();
+      setSessionId(d.session_id);
+      setQuestion(d.question);
+      setSelected(null); setRevealed(false); setFeedback(null); setSummary(null);
+      setMode('quiz');
+    } catch(e) { notify('ML API offline — check python ml_api.py', 'error'); }
+    setLoading(false);
   }
 
-  if (mode==="select") return (
+  async function submitAnswer() {
+    if (selected === null) return;
+    setLoading(true);
+    try {
+      const r = await fetch(ML_API + '/api/ml/quiz/answer', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ session_id: sessionId, answer_index: selected })
+      });
+      const d = await r.json();
+      setFeedback({ correct: d.is_correct, explanation: d.explanation, correct_text: d.correct_text });
+      setRevealed(true);
+      if (d.level_changed && d.level_changed !== question.difficulty) {
+        setLevelChange(d.level_changed);
+      }
+      if (d.summary) {
+        setSummary(d.summary);
+        const pts = Math.round(d.summary.percentage * 0.5);
+        updateUser({ score: user.score + pts, xp: user.xp + pts,
+          quizScores: [...(user.quizScores||[]), { score: d.summary.percentage, difficulty: level, date: new Date().toLocaleDateString() }],
+          totalAnswers: user.totalAnswers + d.summary.history.length,
+          correctAnswers: user.correctAnswers + d.summary.history.filter(h=>h.is_correct).length
+        });
+      }
+      if (d.next_question && !d.summary) {
+        setTimeout(() => {
+          setQuestion(d.next_question);
+          setSelected(null); setRevealed(false); setFeedback(null); setLevelChange(null);
+        }, 2200);
+      }
+    } catch(e) { notify('Error submitting answer','error'); }
+    setLoading(false);
+  }
+
+  function diffColor(d) { return d==='beginner'?'var(--success)':d==='intermediate'?'var(--warn)':'var(--danger)'; }
+
+  if (mode === 'select') return (
     <div className="page-content fade-in">
-      <h2 style={{fontSize:22,fontWeight:800,marginBottom:6}}>🧠 Adaptive Quiz</h2>
-      <p style={{color:"var(--text2)",marginBottom:20}}>Test your medical knowledge — difficulty adapts to your level</p>
-      <div className="grid g3" style={{marginBottom:20}}>
-        {["beginner","intermediate","advanced"].map(d=>{
-          const colors={beginner:"var(--success)",intermediate:"var(--warn)",advanced:"var(--danger)"};
-          return (
-            <div key={d} className="card" style={{cursor:"pointer",borderColor:difficulty===d?colors[d]:"var(--border)",transition:"all .15s"}} onClick={()=>setDifficulty(d)}>
-              <div style={{fontSize:24,marginBottom:8}}>{d==="beginner"?"🌱":d==="intermediate"?"🔥":"⚡"}</div>
-              <div style={{fontWeight:700,textTransform:"capitalize",color:difficulty===d?colors[d]:"var(--text)"}}>{d}</div>
-              <div style={{fontSize:12,color:"var(--text3)",marginTop:4}}>
-                {QUIZ_QUESTIONS.filter(q=>q.difficulty===d).length} questions
-              </div>
-            </div>
-          );
-        })}
+      <div style={{marginBottom:20}}>
+        <h2 style={{fontSize:22,fontWeight:800}}>🧠 Adaptive ML Quiz</h2>
+        <p style={{color:'var(--text2)',marginTop:4}}>Powered by a real ML classifier — difficulty adapts based on your performance</p>
       </div>
-      {user.quizScores?.length > 0 && (
-        <div className="card" style={{marginBottom:20}}>
-          <div style={{fontSize:14,fontWeight:700,marginBottom:12}}>Recent Quiz History</div>
-          {user.quizScores.slice(-5).reverse().map((s,i)=>(
-            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
-              <span style={{fontSize:13,textTransform:"capitalize"}}>{s.difficulty}</span>
-              <span style={{fontSize:12,color:"var(--text3)"}}>{s.date}</span>
-              <span style={{fontWeight:700,color:s.score>=70?"var(--success)":s.score>=40?"var(--warn)":"var(--danger)"}}>{s.score}%</span>
-            </div>
-          ))}
+      {apiOnline === false && (
+        <div className="card" style={{marginBottom:16,borderColor:'var(--danger)',background:'rgba(248,113,113,0.05)'}}>
+          <div style={{color:'var(--danger)',fontWeight:700}}>⚠ ML API Offline</div>
+          <div style={{fontSize:13,color:'var(--text2)',marginTop:4}}>Run: <code style={{background:'var(--bg3)',padding:'2px 6px',borderRadius:4}}>python ml_api.py</code> in the project folder.</div>
         </div>
       )}
-      <button className="btn btn-primary btn-lg" onClick={startQuiz}>Start Quiz →</button>
+      {apiOnline && apiOnline.model && (
+        <div className="card" style={{marginBottom:16,borderColor:'var(--accent3)',background:'rgba(52,211,153,0.05)',padding:'12px 16px'}}>
+          <div style={{display:'flex',gap:16,alignItems:'center'}}>
+            <span style={{fontSize:20}}>🤖</span>
+            <div>
+              <div style={{fontWeight:700,fontSize:13,color:'var(--success)'}}>ML Model Online — {apiOnline.model}</div>
+              <div style={{fontSize:12,color:'var(--text3)'}}>CV F1: {apiOnline.cv_f1_macro} · {apiOnline.question_count} questions · 8 topics · Adaptive difficulty</div>
+            </div>
+          </div>
+        </div>
+      )}
+      <div style={{marginBottom:16}}>
+        <label style={{fontWeight:600,marginBottom:8,display:'block'}}>Topic</label>
+        <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+          {TOPICS.map(t => (
+            <button key={t} onClick={()=>setTopic(t)} style={{padding:'6px 12px',borderRadius:20,border:'1px solid',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:"'DM Sans',sans-serif",
+              background:topic===t?'var(--accent)':'transparent',color:topic===t?'#0a0e1a':'var(--text2)',borderColor:topic===t?'var(--accent)':'var(--border)'}}>
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="grid g3" style={{marginBottom:20}}>
+        {['beginner','intermediate','hard'].map(d => (
+          <div key={d} className="card" style={{cursor:'pointer',borderColor:level===d?diffColor(d):'var(--border)',transition:'all .15s'}} onClick={()=>setLevel(d)}>
+            <div style={{fontSize:22,marginBottom:6}}>{d==='beginner'?'🌱':d==='intermediate'?'🔥':'⚡'}</div>
+            <div style={{fontWeight:700,textTransform:'capitalize',color:level===d?diffColor(d):'var(--text)'}}>{d}</div>
+            <div style={{fontSize:12,color:'var(--text3)',marginTop:3}}>ML adapts up or down from here</div>
+          </div>
+        ))}
+      </div>
+      <button className="btn btn-primary btn-lg" disabled={loading||apiOnline===false} onClick={startQuiz}>
+        {loading?'Starting…':'Start ML Quiz →'}
+      </button>
     </div>
   );
 
-  if (mode==="quiz") {
-    const q = questions[step];
+  if (mode === 'quiz' && summary) {
+    const sc = summary.percentage;
     return (
       <div className="page-content fade-in">
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-          <span style={{fontSize:13,color:"var(--text3)"}}>Question {step+1}/{questions.length}</span>
-          <span className="badge badge-purple" style={{textTransform:"capitalize"}}>{difficulty}</span>
-        </div>
-        <div style={{background:"var(--bg3)",borderRadius:4,height:5,marginBottom:20,overflow:"hidden"}}>
-          <div style={{height:"100%",background:"var(--accent2)",width:`${(step/questions.length)*100}%`,transition:"width .4s"}}/>
+        <div className="card" style={{textAlign:'center',padding:28,marginBottom:20,borderColor:sc>=70?'var(--success)':sc>=40?'var(--warn)':'var(--danger)'}}>
+          <div style={{fontSize:48,marginBottom:10}}>{sc>=80?'🎯':sc>=60?'📚':'💡'}</div>
+          <h2 style={{fontSize:28,fontWeight:800}}>{sc}%</h2>
+          <p style={{color:'var(--text2)',marginTop:6}}>{summary.score} correct — {summary.verdict}</p>
+          <div style={{marginTop:16,display:'flex',gap:20,justifyContent:'center',flexWrap:'wrap'}}>
+            {summary.strengths.length>0 && <div style={{padding:'8px 14px',background:'rgba(52,211,153,0.1)',border:'1px solid var(--success)',borderRadius:8,fontSize:12}}>💪 Strong: {summary.strengths.join(', ')}</div>}
+            {summary.weaknesses.length>0 && <div style={{padding:'8px 14px',background:'rgba(248,113,113,0.1)',border:'1px solid var(--danger)',borderRadius:8,fontSize:12}}>📖 Review: {summary.weaknesses.join(', ')}</div>}
+          </div>
         </div>
         <div className="card" style={{marginBottom:16}}>
-          <p style={{fontSize:16,fontWeight:600,lineHeight:1.5}}>{q.q}</p>
+          <div style={{fontWeight:700,marginBottom:12}}>Per-Topic Scores</div>
+          {Object.entries(summary.topic_scores).map(([t,sc]) => (
+            <div key={t} className="topic-score-bar">
+              <div className="tsb-header"><span>{t}</span><span style={{color:sc>=75?'var(--success)':sc>=40?'var(--warn)':'var(--danger)',fontWeight:700}}>{sc}%</span></div>
+              <div className="tsb-bar"><div className="tsb-fill" style={{width:sc+'%',background:sc>=75?'var(--success)':sc>=40?'var(--warn)':'var(--danger)'}}/></div>
+            </div>
+          ))}
         </div>
-        {q.opts.map((opt,i)=>{
-          let cls = "quiz-opt";
+        <div className="card" style={{marginBottom:16}}>
+          <div style={{fontWeight:700,marginBottom:12}}>Question Review</div>
+          {summary.history.map((h,i) => (
+            <div key={i} style={{padding:'10px 12px',marginBottom:8,borderRadius:8,background:'var(--bg3)',borderLeft:`3px solid ${h.is_correct?'var(--success)':'var(--danger)'}`}}>
+              <div style={{fontSize:12,color:'var(--text3)',marginBottom:3}}>{h.topic} · {h.difficulty}</div>
+              <div style={{fontSize:13,fontWeight:600}}>{h.question}</div>
+              <div style={{fontSize:12,marginTop:4,color:h.is_correct?'var(--success)':'var(--danger)'}}>
+                {h.is_correct?'✓ Correct':'✗ Wrong'} — Correct: {h.correct_option}
+              </div>
+              {!h.is_correct && <div style={{fontSize:12,color:'var(--text2)',marginTop:4,fontStyle:'italic'}}>{h.explanation}</div>}
+            </div>
+          ))}
+        </div>
+        <div style={{display:'flex',gap:10}}>
+          <button className="btn btn-primary" onClick={()=>setMode('select')}>← Quiz Menu</button>
+          <button className="btn btn-outline" onClick={startQuiz}>Retry</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === 'quiz' && question) {
+    const prog = ((question.q_num-1)/question.total)*100;
+    return (
+      <div className="page-content fade-in">
+        <div style={{display:'flex',justifyContent:'space-between',marginBottom:8,fontSize:12,color:'var(--text3)'}}>
+          <span>Question {question.q_num}/{question.total}</span>
+          <div style={{display:'flex',gap:8,alignItems:'center'}}>
+            <span className={`diff-tag diff-${question.difficulty}`}>{question.difficulty}</span>
+            <span style={{fontSize:11,color:'var(--text3)'}}>ML: {question.ml_predicted} ({Math.round(question.ml_confidence*100)}%)</span>
+          </div>
+        </div>
+        <div style={{height:5,background:'var(--bg4)',borderRadius:3,marginBottom:16,overflow:'hidden'}}>
+          <div style={{height:'100%',background:'var(--accent2)',width:prog+'%',transition:'width .4s'}}/>
+        </div>
+        {levelChange && (
+          <div style={{padding:'8px 14px',marginBottom:12,borderRadius:8,background:'rgba(251,191,36,0.1)',border:'1px solid var(--warn)',fontSize:13,fontWeight:600,color:'var(--warn)'}}>
+            ⚡ Difficulty adapted → {levelChange.toUpperCase()}
+          </div>
+        )}
+        <div className="card" style={{marginBottom:14}}>
+          <div style={{fontSize:12,color:'var(--text3)',marginBottom:6}}>{question.topic}</div>
+          <p style={{fontSize:16,fontWeight:600,lineHeight:1.6}}>{question.question}</p>
+        </div>
+        {question.options.map((opt,i) => {
+          let cls = 'quiz-opt';
           if (revealed) {
-            if (i===q.ans) cls+=" correct";
-            else if (i===selected) cls+=" wrong";
-          } else if (i===selected) cls+=" selected";
+            if (i === question._correct_index) cls += ' correct';
+            else if (i === selected) cls += ' wrong';
+            cls += ' disabled';
+          } else if (i === selected) cls += ' selected';
           return (
-            <div key={i} className={cls+(revealed?" disabled":"")} onClick={()=>!revealed&&setSelected(i)}>
-              <span style={{marginRight:8,fontWeight:700,color:"var(--text3)"}}>{String.fromCharCode(65+i)}.</span>{opt}
+            <div key={i} className={cls} onClick={()=>!revealed&&setSelected(i)}>
+              <span style={{marginRight:8,fontWeight:700,color:'var(--text3)'}}>{String.fromCharCode(65+i)}.</span>{opt}
             </div>
           );
         })}
-        {revealed && (
-          <div className="card" style={{marginTop:12,borderLeft:"3px solid var(--accent2)",background:"rgba(129,140,248,0.05)"}}>
-            <div style={{fontSize:12,color:"var(--text3)",marginBottom:4,fontWeight:700}}>EXPLANATION</div>
-            <p style={{fontSize:13,lineHeight:1.6}}>{q.exp}</p>
+        {feedback && (
+          <div className="card" style={{marginTop:12,borderLeft:`3px solid ${feedback.correct?'var(--success)':'var(--danger)'}`,background:feedback.correct?'rgba(52,211,153,0.05)':'rgba(248,113,113,0.05)'}}>
+            <div style={{fontWeight:700,color:feedback.correct?'var(--success)':'var(--danger)',marginBottom:4}}>{feedback.correct?'✓ Correct!':'✗ Incorrect — Correct: '+feedback.correct_text}</div>
+            <p style={{fontSize:13,lineHeight:1.6,color:'var(--text2)'}}>{feedback.explanation}</p>
           </div>
         )}
-        <div style={{display:"flex",gap:10,marginTop:16}}>
+        <div style={{marginTop:16}}>
           {!revealed
-            ? <button className="btn btn-outline" disabled={selected===null} onClick={reveal}>Check Answer</button>
-            : <button className="btn btn-primary" onClick={next}>{step<questions.length-1?"Next →":"See Results →"}</button>
+            ? <button className="btn btn-outline" disabled={selected===null||loading} onClick={submitAnswer}>Check Answer</button>
+            : !summary && <div style={{fontSize:12,color:'var(--text3)',fontStyle:'italic'}}>Loading next question…</div>
           }
         </div>
       </div>
     );
   }
 
-  if (mode==="result") {
-    const correct = results.filter(r=>r.correct).length;
-    const pct = Math.round(correct/results.length*100);
-    return (
-      <div className="page-content fade-in">
-        <div className="card" style={{textAlign:"center",padding:28,marginBottom:20,borderColor:pct>=70?"var(--success)":pct>=40?"var(--warn)":"var(--danger)"}}>
-          <div style={{fontSize:48,marginBottom:10}}>{pct>=70?"🎯":pct>=40?"📚":"💡"}</div>
-          <h2 style={{fontSize:26,fontWeight:800}}>{pct}%</h2>
-          <p style={{color:"var(--text2)",marginTop:6}}>{correct} / {results.length} correct</p>
-          <div style={{fontSize:14,marginTop:10,color:pct>=70?"var(--success)":pct>=40?"var(--warn)":"var(--danger)",fontWeight:600}}>
-            {pct>=70?"Excellent performance!":pct>=40?"Good effort, keep going!":"More practice recommended"}
-          </div>
-          {pct < 40 && (
-            <div style={{marginTop:16,padding:12,background:"rgba(251,146,60,0.1)",border:"1px solid var(--accent5)",borderRadius:8,fontSize:13}}>
-              💡 We recommend connecting with a mentor to strengthen your foundation.
-            </div>
-          )}
-        </div>
-        <div className="card" style={{marginBottom:20}}>
-          <div style={{fontSize:14,fontWeight:700,marginBottom:12}}>Review Answers</div>
-          {results.map((r,i)=>(
-            <div key={i} style={{marginBottom:12,padding:10,background:"var(--bg3)",borderRadius:8,borderLeft:`3px solid ${r.correct?"var(--success)":"var(--danger)"}`}}>
-              <div style={{fontSize:13,fontWeight:600,marginBottom:4}}>{r.q.q}</div>
-              <div style={{fontSize:12,color:r.correct?"var(--success)":"var(--danger)"}}>
-                {r.correct?"✓ Correct":"✗ Incorrect"} — Correct: {r.q.opts[r.q.ans]}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div style={{display:"flex",gap:10}}>
-          <button className="btn btn-primary" onClick={()=>setMode("select")}>← Quiz Menu</button>
-          <button className="btn btn-outline" onClick={startQuiz}>Retry</button>
-        </div>
-      </div>
-    );
-  }
+  return null;
 }
 
 /* ==================== MULTIPLAYER ==================== */
 function Multiplayer({ user }) {
-  const [view, setView] = useState("lobby"); // lobby | room
-  const [rooms, setRooms] = useState([
-    { id:"R001", name:"Cardiology Ward", host:"Dr. Priya Sharma", members:3, max:5, status:"active", case:"Chest Pain — 58M" },
-    { id:"R002", name:"Peds Emergency", host:"Aisha Nair", members:2, max:4, status:"active", case:"Fever + Rash — 8F" },
-    { id:"R003", name:"ICU Round", host:"Dr. Vikram Rao", members:4, max:4, status:"full", case:"Confusion + Polyuria — 45M" }
+  const [view, setView] = React.useState('lobby');
+  const [roomId, setRoomId] = React.useState('main-theater');
+  const [players, setPlayers] = React.useState([]);
+  const [vitals, setVitals] = React.useState({ hr: 75, bp: '118/78', spo2: 98, status: 'STABLE' });
+  const [progress, setProgress] = React.useState(0);
+  const [gameState, setGameState] = React.useState('ACTIVE'); 
+  const [history, setHistory] = React.useState([]);
+  const [chat, setChat] = React.useState([]);
+  const [chatText, setChatText] = React.useState('');
+  const [cmdText, setCmdText] = React.useState('');
+  const [myRole, setMyRole] = React.useState('Doctor');
+  const [showCreateModal, setShowCreateModal] = React.useState(false);
+  const [newTeamName, setNewTeamName] = React.useState('');
+  const [availableRooms, setAvailableRooms] = React.useState([
+    { id:'R101', name:'General OR 1', host:'Dr. Smith', members:2, max:4, case:'Appendectomy' },
+    { id:'R102', name:'Cardiac Suite', host:'Dr. Jones', members:1, max:4, case:'Valve Repair' }
   ]);
-  const [currentRoom, setCurrentRoom] = useState(null);
-  const [messages, setMessages] = useState([
-    { from:"System", text:"Room created. Waiting for team members…", ts:"10:00" },
-    { from:"Dr. Priya Sharma", text:"Welcome! I'm the attending. Let's start with the vitals.", ts:"10:01", role:"Doctor" },
-    { from:"Aisha Nair", text:"Patient BP is critically elevated. Should we do ECG stat?", ts:"10:01", role:"Intern" }
-  ]);
-  const [newMsg, setNewMsg] = useState("");
-  const [roomName, setRoomName] = useState("");
-  const [showCreate, setShowCreate] = useState(false);
-  const chatRef = useRef(null);
+  
+  const canvasRef = React.useRef(null);
+  const socketRef = React.useRef(null);
+  const chatEndRef = React.useRef(null);
 
-  function joinRoom(r) {
-    if (r.status==="full") { notify("Room is full!", "error"); return; }
-    setCurrentRoom(r);
-    setMessages(prev=>[...prev,{from:"System",text:`${user.name} joined the room.`,ts:new Date().toLocaleTimeString("en",{hour:"2-digit",minute:"2-digit"})}]);
-    setView("room");
+  const ROLE_ICONS = { 'Doctor':'👨‍⚕️', 'Surgeon':'🔪', 'Anaesthetic':'😴', 'Assistant Intern':'🎓' };
+  const TOOL_ICONS = { 'vitals':'🩺', 'epi':'💉', 'defib':'⚡', 'test':'📋', 'incision':'🔪', 'suture':'🧵', 'hemo':'🩸', 'suction':'🌪️', 'intubate':'🌬️', 'propofol':'🧪', 'oxygen':'💨', 'mon':'📈', 'iv':'💧', 'gauze':'🩹', 'retract':'🪝', 'clean':'🧼' };
+  
+  const TOOLS = {
+    'Doctor':          [{ name:'Check Vitals', action:'vitals' }, { name:'Epinephrine', action:'epi' }, { name:'Defib', action:'defib' }, { name:'Order Test', action:'test' }],
+    'Surgeon':         [{ name:'Incision', action:'incision' }, { name:'Suturing', action:'suture' }, { name:'Hemostasis', action:'hemo' }, { name:'Suction', action:'suction' }],
+    'Anaesthetic':     [{ name:'Intubate', action:'intubate' }, { name:'Propofol', action:'propofol' }, { name:'Oxygen', action:'oxygen' }, { name:'Monitor', action:'mon' }],
+    'Assistant Intern':[{ name:'IV Fluid', action:'iv' }, { name:'Gauze', action:'gauze' }, { name:'Retract', action:'retract' }, { name:'Clean', action:'clean' }]
+  };
+
+  React.useEffect(() => {
+    const skt = window.io ? window.io('http://localhost:3001') : null;
+    if (!skt) return;
+    socketRef.current = skt;
+    skt.emit('join_room', { roomId, user: { name: user.name, role: myRole } });
+    skt.on('room_update', d => { if(d.members) setPlayers(d.members); });
+    skt.on('new_message', m => setChat(p => [...p, m]));
+    return () => skt.disconnect();
+  }, [roomId, myRole, view]);
+
+  function createHumanoid(color, isPatient = false) {
+    const group = new THREE.Group();
+    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.3, 0.7, 4, 8), new THREE.MeshStandardMaterial({ color }));
+    torso.position.y = 0.6; group.add(torso);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), new THREE.MeshStandardMaterial({ color: 0xffdbac }));
+    head.position.y = 1.15; group.add(head);
+    const armL = new THREE.Mesh(new THREE.CapsuleGeometry(0.08, 0.5, 4, 8), new THREE.MeshStandardMaterial({ color }));
+    armL.position.set(-0.4, 0.7, 0); group.add(armL);
+    const armR = new THREE.Mesh(new THREE.CapsuleGeometry(0.08, 0.5, 4, 8), new THREE.MeshStandardMaterial({ color }));
+    armR.position.set(0.4, 0.7, 0); group.add(armR);
+    const legL = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.6, 4, 8), new THREE.MeshStandardMaterial({ color }));
+    legL.position.set(-0.15, 0.1, 0); group.add(legL);
+    const legR = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.6, 4, 8), new THREE.MeshStandardMaterial({ color }));
+    legR.position.set(0.15, 0.1, 0); group.add(legR);
+    if(isPatient) group.rotation.x = -Math.PI/2;
+    // Fallback if CapsuleGeometry fails (added by previous fix scripts)
+    group.traverse(c => { if(c.geometry && c.geometry.type === 'CapsuleGeometry' && !THREE.CapsuleGeometry) c.geometry = new THREE.CylinderGeometry(c.geometry.parameters.radius, c.geometry.parameters.radius, c.geometry.parameters.length, 16); });
+    return group;
   }
 
-  function sendMsg() {
-    if (!newMsg.trim()) return;
-    setMessages(prev=>[...prev,{from:user.name,text:newMsg,ts:new Date().toLocaleTimeString("en",{hour:"2-digit",minute:"2-digit"}),self:true,role:user.role}]);
-    setNewMsg("");
-    setTimeout(()=>{
-      const bots=["Dr. Priya Sharma","Aisha Nair","System"];
-      const botReplies=["Good point! Let's verify with labs.","Agreed. I'll order the investigation now.","The patient's condition is stable for now.","Interesting presentation. Could be multiple differentials.","Let's review the ECG together."];
-      setMessages(prev=>[...prev,{from:bots[Math.floor(Math.random()*bots.length)],text:botReplies[Math.floor(Math.random()*botReplies.length)],ts:new Date().toLocaleTimeString("en",{hour:"2-digit",minute:"2-digit"})}]);
-      if(chatRef.current) chatRef.current.scrollTop=chatRef.current.scrollHeight;
-    },1200);
-    if(chatRef.current) chatRef.current.scrollTop=chatRef.current.scrollHeight;
+  function createTextLabel(text, subtext, color) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = 300; canvas.height = 80;
+    ctx.fillStyle = 'rgba(10,14,26,0.95)';
+    const x=0,y=0,w=300,h=80,r=15;
+    ctx.beginPath(); ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r); ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h); ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r); ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = color || '#6366f1'; ctx.lineWidth = 4; ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 24px DM Sans'; ctx.textAlign = 'center'; ctx.fillText(text, 150, 35);
+    ctx.fillStyle = color || '#818cf8'; ctx.font = '600 16px DM Sans'; ctx.fillText(subtext, 150, 65);
+    const tex = new THREE.CanvasTexture(canvas);
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
+    sprite.scale.set(2, 0.5, 1);
+    return sprite;
   }
 
-  function createRoom() {
-    if(!roomName.trim()) return;
-    const r={id:`R${Date.now()}`,name:roomName,host:user.name,members:1,max:5,status:"active",case:MOCK_CASES[0].title};
-    setRooms(prev=>[r,...prev]);
-    setShowCreate(false); setRoomName("");
-    joinRoom(r);
-    notify("Room created!", "success");
+  React.useEffect(() => {
+    if (view !== 'room' || !canvasRef.current) return;
+    const el = canvasRef.current;
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(el.clientWidth, el.clientHeight);
+    el.appendChild(renderer.domElement);
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(0x020617);
+    const camera = new THREE.PerspectiveCamera(50, el.clientWidth/el.clientHeight, 0.1, 100);
+    camera.position.set(5, 4, 6);
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+    const light = new THREE.PointLight(0xffffff, 1.5); light.position.set(0, 10, 0); scene.add(light);
+    
+    scene.add(new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.2, 4.6), new THREE.MeshStandardMaterial({ color:0x94a3b8 })));
+    const patient = createHumanoid(0xffdbac, true); patient.position.set(0, 0.6, 0); scene.add(patient);
+    const pLabel = createTextLabel('PATIENT', 'STATUS: ' + vitals.status, '#f43f5e'); pLabel.position.y = 1.3; scene.add(pLabel);
+
+    const activePlayers = [...players];
+    if(!activePlayers.find(p=>p.name===user.name)) activePlayers.push({ name:user.name, role:myRole });
+    const avatarGroup = new THREE.Group();
+    activePlayers.forEach((p, i) => {
+      const color = p.role==='Surgeon'?0xf87171:p.role==='Anaesthetic'?0x818cf8:p.role==='Assistant Intern'?0x34d399:0x6366f1;
+      const doc = createHumanoid(color);
+      const label = createTextLabel(p.name, ROLE_ICONS[p.role] + ' ' + p.role, '#' + color.toString(16).padStart(6,'0'));
+      label.position.y = 1.6; doc.add(label);
+      const ang = (i / Math.max(1, activePlayers.length)) * Math.PI * 2;
+      doc.position.set(Math.cos(ang)*3.5, 0, Math.sin(ang)*3.5); doc.lookAt(0,0,0);
+      avatarGroup.add(doc);
+    });
+    scene.add(avatarGroup);
+    scene.add(new THREE.GridHelper(20, 20, 0x1e293b, 0x1e293b));
+
+    if (window.THREE && THREE.OBJLoader) {
+      new THREE.OBJLoader().load('/hackthonnn.obj', obj => {
+        obj.scale.setScalar(0.02); obj.position.y = -0.5;
+        obj.traverse(c => { if(c.isMesh) c.material = new THREE.MeshStandardMaterial({ color: 0x1e293b, transparent:true, opacity:0.3 }); });
+        scene.add(obj);
+      });
+    }
+
+    let raf;
+    function animate() {
+      raf = requestAnimationFrame(animate);
+      patient.position.y = 0.6 + Math.sin(performance.now()*0.002)*0.01;
+      avatarGroup.children.forEach((av, i) => { av.position.y = Math.sin(performance.now()*0.0015 + i)*0.05; });
+      controls.update(); renderer.render(scene, camera);
+    }
+    animate();
+    return () => { cancelAnimationFrame(raf); renderer.dispose(); if(el.contains(renderer.domElement)) el.removeChild(renderer.domElement); };
+  }, [view, players, myRole, vitals.status]);
+
+  function handleCreateTeam() {
+    if(!newTeamName.trim()) return;
+    const id = 'R' + Date.now().toString().slice(-4);
+    setAvailableRooms(p => [{ id, name: newTeamName, host: user.name, members: 1, max: 4, case: 'Critical Trauma' }, ...p]);
+    setRoomId(id); setView('room'); setShowCreateModal(false); setNewTeamName('');
+    notify('Team ' + newTeamName + ' created!', 'success');
   }
 
-  if (view==="room") return (
-    <div className="page-content fade-in" style={{maxHeight:"calc(100vh - 60px)",display:"flex",flexDirection:"column"}}>
-      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
-        <button className="btn btn-outline btn-sm" onClick={()=>setView("lobby")}>← Leave Room</button>
-        <div>
-          <h3 style={{fontSize:16,fontWeight:700}}>{currentRoom.name}</h3>
-          <div style={{fontSize:12,color:"var(--text3)"}}>Case: {currentRoom.case}</div>
-        </div>
-        <div style={{marginLeft:"auto",display:"flex",gap:6,alignItems:"center"}}>
-          <span style={{width:8,height:8,background:"var(--success)",borderRadius:"50%",display:"inline-block"}}/>
-          <span style={{fontSize:12,color:"var(--text2)"}}>{currentRoom.members} online</span>
-        </div>
-      </div>
+  function sendAction(action) {
+    if (gameState !== 'ACTIVE') return;
+    const isGood = Math.random() > 0.3;
+    const newProgress = Math.min(100, progress + (isGood ? 4 : 1));
+    const newHr = vitals.hr + (isGood ? -2 : 6);
+    setHistory(p => [...p, { user: user.name, action, time: new Date().toLocaleTimeString(), classification: isGood ? 'OK' : 'DANGER' }]);
+    setProgress(newProgress);
+    setVitals(v => ({ ...v, hr: newHr, status: newHr > 150 ? 'CRITICAL' : newHr < 40 ? 'CRITICAL' : 'STABLE' }));
+    if (newProgress >= 100) setGameState('WON');
+    else if (newHr > 190 || newHr < 25) setGameState('LOST');
+    setCmdText('');
+  }
 
-      {/* Role tags */}
-      <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
-        {ROLES.map(r=><span key={r.id} className="badge" style={{background:r.color+"22",color:r.color}}>{r.icon} {r.label}</span>)}
-      </div>
+  function sendChat(e) {
+    e.preventDefault(); if(!chatText.trim()) return;
+    const msg = { from: user.name, text: chatText, ts: new Date().toLocaleTimeString() };
+    if(socketRef.current) socketRef.current.emit('send_message', { roomId, text: chatText });
+    setChat(p => [...p, msg]); setChatText('');
+  }
 
-      {/* Chat */}
-      <div ref={chatRef} style={{flex:1,overflowY:"auto",background:"var(--bg3)",borderRadius:10,padding:14,marginBottom:12,minHeight:280,maxHeight:380}}>
-        {messages.map((m,i)=>(
-          <div key={i} className="chat-msg" style={{textAlign:m.self?"right":"left"}}>
-            {!m.self&&<div style={{fontSize:11,color:"var(--text3)",marginBottom:2}}>{m.from}{m.role?` · ${m.role}`:""} {m.ts}</div>}
-            <div className={`chat-bubble ${m.self?"me":"them"}`} style={m.from==="System"?{background:"transparent",color:"var(--text3)",fontStyle:"italic",fontSize:12}:{}}>
-              {m.text}
+  if (view === 'lobby') return (
+    <div className="page-content fade-in">
+      {showCreateModal && (
+        <div className="modal-overlay">
+          <div className="modal" style={{maxWidth:400}}>
+            <h3 style={{marginBottom:15}}>Create New Team</h3>
+            <input value={newTeamName} onChange={e=>setNewTeamName(e.target.value)} placeholder="Team Name..." style={{marginBottom:20}} autoFocus/>
+            <div style={{display:'flex', gap:10}}>
+              <button className="btn btn-primary" style={{flex:1}} onClick={handleCreateTeam}>Create Team</button>
+              <button className="btn btn-outline" style={{flex:1}} onClick={()=>setShowCreateModal(false)}>Cancel</button>
             </div>
-            {m.self&&<div style={{fontSize:11,color:"var(--text3)",marginTop:2}}>{m.ts}</div>}
+          </div>
+        </div>
+      )}
+      <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24}}>
+        <div><h2 style={{fontSize:24,fontWeight:800}}>👥 Surgical Lobby</h2><p style={{color:'var(--text2)'}}>Initialize a team or join an active OR</p></div>
+        <button className="btn btn-primary btn-lg" onClick={()=>setShowCreateModal(true)}>+ CREATE NEW TEAM</button>
+      </div>
+      <div style={{marginBottom:24}}>
+        <label style={{fontSize:12, color:'var(--text3)', marginBottom:10, display:'block', fontWeight:800}}>CHOOSE YOUR SPECIALIZATION</label>
+        <div style={{display:'flex', gap:10}}>
+          {Object.keys(ROLE_ICONS).map(r => (
+            <button key={r} className="btn btn-sm" style={{borderRadius:20, padding:'8px 20px', background:myRole===r?'var(--accent)':'rgba(255,255,255,0.05)', color:myRole===r?'#0a0e1a':'var(--text)', border:'1px solid var(--border)'}} onClick={() => setMyRole(r)}>{ROLE_ICONS[r]} {r}</button>
+          ))}
+        </div>
+      </div>
+      <div className="grid g2">
+        {availableRooms.map(r => (
+          <div key={r.id} className="card" style={{borderColor:roomId===r.id?'var(--accent)':'var(--border)', transition:'all 0.2s', cursor:'pointer'}} onClick={() => { setRoomId(r.id); setView('room'); }}>
+            <div style={{display:'flex', justifyContent:'space-between', marginBottom:10}}><span style={{fontWeight:800, fontSize:16}}>{r.name}</span><span className="badge badge-green">ACTIVE</span></div>
+            <div style={{fontSize:13, color:'var(--text2)', marginBottom:12}}>📋 Case: {r.case} · {r.members}/{r.max} Surgeons</div>
+            <button className="btn btn-outline btn-sm btn-block">JOIN OPERATION →</button>
           </div>
         ))}
-      </div>
-
-      {/* Input */}
-      <div style={{display:"flex",gap:8}}>
-        <input placeholder="Type your clinical observation…" value={newMsg} onChange={e=>setNewMsg(e.target.value)}
-               onKeyDown={e=>e.key==="Enter"&&sendMsg()} style={{flex:1}} />
-        <button className="btn btn-primary" onClick={sendMsg}>Send</button>
       </div>
     </div>
   );
 
   return (
-    <div className="page-content fade-in">
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
-        <div>
-          <h2 style={{fontSize:22,fontWeight:800}}>👥 Multiplayer Sessions</h2>
-          <p style={{color:"var(--text2)",marginTop:4}}>Collaborate on clinical cases in real-time</p>
-        </div>
-        <button className="btn btn-primary btn-sm" onClick={()=>setShowCreate(true)}>+ Create Room</button>
-      </div>
-
-      {showCreate && (
-        <div className="card" style={{marginBottom:16,borderColor:"var(--accent)"}}>
-          <h4 style={{marginBottom:12}}>Create New Room</h4>
-          <div style={{display:"flex",gap:8}}>
-            <input placeholder="Room name (e.g. Neurology Ward)" value={roomName} onChange={e=>setRoomName(e.target.value)}
-                   onKeyDown={e=>e.key==="Enter"&&createRoom()} />
-            <button className="btn btn-primary btn-sm" onClick={createRoom}>Create</button>
-            <button className="btn btn-outline btn-sm" onClick={()=>setShowCreate(false)}>Cancel</button>
-          </div>
+    <div style={{display:'grid', gridTemplateColumns:'280px 1fr 300px', gap:12, height:'calc(100vh - 100px)', overflow:'hidden', position:'relative'}}>
+      {gameState !== 'ACTIVE' && (
+        <div style={{position:'absolute', inset:0, zIndex:1000, background:'rgba(0,0,0,0.9)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', backdropFilter:'blur(10px)'}}>
+          <div style={{fontSize:100, marginBottom:20}}>{gameState==='WON'?'🏆':'🛑'}</div>
+          <h1 style={{fontSize:54, fontWeight:800, color:gameState==='WON'?'var(--success)':'var(--danger)', marginBottom:10, textAlign:'center'}}>{gameState==='WON'?'MISSION SUCCESS':'MISSION FAILED'}</h1>
+          <p style={{fontSize:20, color:'var(--text2)', marginBottom:30, textAlign:'center'}}>{gameState==='WON'?'The patient has been successfully stabilized. Excellent clinical performance!':'The patient was lost. Review the logs to identify the point of failure.'}</p>
+          <button className="btn btn-primary btn-lg" onClick={() => { setGameState('ACTIVE'); setProgress(0); setVitals({ hr: 75, bp: '118/78', spo2: 98, status: 'STABLE' }); setHistory([]); }}>RETRY OPERATION</button>
         </div>
       )}
 
-      <div style={{display:"flex",flexDirection:"column",gap:10}}>
-        {rooms.map(r=>(
-          <div key={r.id} className="card" style={{display:"flex",alignItems:"center",gap:14}}>
-            <div style={{width:42,height:42,borderRadius:10,background:"rgba(56,189,248,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>🏥</div>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:700,fontSize:15}}>{r.name}</div>
-              <div style={{fontSize:12,color:"var(--text3)",marginTop:2}}>Host: {r.host} · Case: {r.case}</div>
+      {/* LEFT: LOGS */}
+      <div className="card" style={{display:'flex', flexDirection:'column', overflow:'hidden', padding:0}}>
+        <div style={{padding:15, borderBottom:'1px solid var(--border)', fontSize:11, fontWeight:800, color:'var(--accent)', letterSpacing:1}}>📋 SUBJECT LOGS</div>
+        <div style={{flex:1, overflowY:'auto', padding:12}}>
+          {history.slice().reverse().map((h,i) => (
+            <div key={i} style={{fontSize:11, padding:10, background:'var(--bg3)', borderRadius:8, marginBottom:8, borderLeft:'4px solid '+(h.classification==='DANGER'?'var(--danger)':'var(--success)')}}>
+              <div style={{fontWeight:800}}>{h.user}</div>
+              <div style={{marginTop:3, color:'var(--text2)'}}>{h.action}</div>
+              <div style={{fontSize:9, color:'var(--text3)', marginTop:4, textAlign:'right'}}>{h.time}</div>
             </div>
-            <div style={{textAlign:"right",flexShrink:0}}>
-              <div style={{fontSize:13,marginBottom:4}}>
-                <span style={{color:r.status==="full"?"var(--danger)":"var(--success)",fontWeight:600}}>{r.members}/{r.max}</span>
-                <span style={{color:"var(--text3)",fontSize:11}}> members</span>
-              </div>
-              <button className="btn btn-sm" style={{background:r.status==="full"?"var(--bg4)":"var(--accent)",color:r.status==="full"?"var(--text3)":"#0a0e1a",border:"none"}}
-                      onClick={()=>joinRoom(r)}>
-                {r.status==="full"?"Full":"Join →"}
-              </button>
-            </div>
+          ))}
+        </div>
+        <button className="btn btn-outline btn-sm" style={{margin:15}} onClick={() => setView('lobby')}>← ABANDON MISSION</button>
+      </div>
+
+      {/* CENTER: SIMULATION */}
+      <div style={{display:'flex', flexDirection:'column', gap:12}}>
+        <div style={{background:'#000', borderRadius:12, padding:15, display:'grid', gridTemplateColumns:'repeat(4,1fr)', border:'2px solid #1e293b'}}>
+          <div><div style={{fontSize:10,color:'#f43f5e',fontWeight:800}}>HR</div><div style={{fontSize:28,color:'#f43f5e',fontFamily:'monospace',fontWeight:800}}>{vitals.hr}</div></div>
+          <div><div style={{fontSize:10,color:'#10b981',fontWeight:800}}>BP</div><div style={{fontSize:24,color:'#10b981',fontFamily:'monospace',fontWeight:800}}>{vitals.bp}</div></div>
+          <div><div style={{fontSize:10,color:'#3b82f6',fontWeight:800}}>O2</div><div style={{fontSize:24,color:'#3b82f6',fontFamily:'monospace',fontWeight:800}}>{vitals.spo2}%</div></div>
+          <div style={{textAlign:'right'}}><div style={{fontSize:12,color:vitals.status==='CRITICAL'?'var(--danger)':'var(--success)',fontWeight:800}}>{vitals.status}</div><div style={{fontSize:10,color:'var(--text3)'}}>LIVE FEED</div></div>
+        </div>
+        
+        <div ref={canvasRef} style={{flex:1, background:'#000', borderRadius:12, overflow:'hidden', border:'1px solid #1e293b', position:'relative'}}>
+          <div style={{position:'absolute', top:20, left:'10%', width:'80%', height:10, background:'rgba(255,255,255,0.1)', borderRadius:5, zIndex:10, overflow:'hidden'}}>
+            <div style={{width:`${progress}%`, height:'100%', background:'linear-gradient(90deg, #38bdf8, #818cf8)', transition:'width 0.5s ease'}}/>
           </div>
-        ))}
+          <div style={{position:'absolute', top:35, left:'50%', transform:'translateX(-50%)', fontSize:10, color:'#fff', fontWeight:800, zIndex:10}}>SURGICAL PROGRESS: {progress}%</div>
+          <div style={{position:'absolute', bottom:15, right:15, width:250, background:'rgba(10,14,26,0.9)', padding:15, borderRadius:12, border:'1px solid var(--accent2)', zIndex:10, backdropFilter:'blur(5px)'}}>
+            <div style={{fontSize:11, fontWeight:800, color:'var(--accent2)', marginBottom:5}}>MISSION OBJECTIVE</div>
+            <div style={{fontSize:14, fontWeight:800, color:'#fff', marginBottom:5}}>Trauma Resuscitation</div>
+            <div style={{fontSize:11, color:'var(--text2)', lineHeight:1.4}}>Patient 42M, GSW to chest. Massive hemorrhage. Maintain airway and stabilize vitals.</div>
+          </div>
+        </div>
+
+        <div className="card" style={{padding:15, background:'rgba(0,0,0,0.95)'}}>
+          <div style={{display:'flex', justifyContent:'center', gap:10, marginBottom:15}}>
+            {(TOOLS[myRole] || TOOLS.Doctor).map((t,i) => (
+              <button key={i} onClick={() => sendAction(t.action)} style={{background:'rgba(255,255,255,0.05)', border:'1px solid #334155', color:'#fff', padding:'10px 15px', borderRadius:12, minWidth:85, cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:5}}>
+                <div style={{fontSize:22}}>{TOOL_ICONS[t.action] || '🩺'}</div><div style={{fontSize:9, fontWeight:800}}>{t.name.toUpperCase()}</div>
+              </button>
+            ))}
+          </div>
+          <form onSubmit={e => {e.preventDefault(); sendAction(cmdText);}} style={{display:'flex', background:'#000', padding:'10px 15px', borderRadius:12, border:'1px solid #334155'}}>
+            <span style={{color:'var(--accent)', fontSize:12, marginRight:10, fontWeight:800}}>OR_SYS{'>'}</span>
+            <input style={{flex:1, background:'transparent', border:'none', color:'#fff', fontSize:13, outline:'none'}} placeholder="Enter surgical protocol..." value={cmdText} onChange={e=>setCmdText(e.target.value)}/>
+          </form>
+        </div>
+      </div>
+
+      {/* RIGHT: CHARTS & DISCUSSION */}
+      <div style={{display:'flex', flexDirection:'column', gap:12, overflow:'hidden'}}>
+        <div className="card" style={{flex:0.7, display:'flex', flexDirection:'column', overflow:'hidden', padding:0}}>
+          <div style={{padding:12, borderBottom:'1px solid var(--border)', fontSize:11, fontWeight:800, color:'var(--accent2)', letterSpacing:1}}>👥 SUBJECT CHARTS</div>
+          <div style={{flex:1, overflowY:'auto', padding:12}}>
+            {(players.length?players:[{name:user.name,role:myRole}]).map((p,i) => (
+              <div key={i} style={{padding:'10px 15px', background:'var(--bg3)', borderRadius:10, marginBottom:8, display:'flex', alignItems:'center', gap:12, border:'1px solid '+(p.name===user.name?'var(--accent)':'transparent')}}>
+                <div style={{fontSize:20}}>{ROLE_ICONS[p.role]||'🩺'}</div>
+                <div>
+                  <div style={{fontSize:13, fontWeight:800}}>{p.name}</div>
+                  <div style={{fontSize:10, color:'var(--text3)', fontWeight:700}}>{p.role.toUpperCase()}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="card" style={{flex:1.3, display:'flex', flexDirection:'column', overflow:'hidden', padding:0}}>
+          <div style={{padding:12, borderBottom:'1px solid var(--border)', fontSize:11, fontWeight:800, color:'var(--accent3)', letterSpacing:1}}>💬 DISCUSSION</div>
+          <div style={{flex:1, overflowY:'auto', padding:15, display:'flex', flexDirection:'column', gap:12}}>
+            {chat.map((m,i) => (
+              <div key={i} style={{alignSelf: m.from===user.name?'flex-end':'flex-start', maxWidth:'85%'}}>
+                <div style={{padding:'8px 12px', background:m.from===user.name?'var(--accent)':'var(--bg3)', borderRadius:12, fontSize:12, color:m.from===user.name?'#0a0e1a':'var(--text)'}}>{m.text}</div>
+                <div style={{fontSize:9, color:'var(--text3)', marginTop:5, textAlign: m.from===user.name?'right':'left', fontWeight:700}}>{m.from.toUpperCase()} · {m.ts}</div>
+              </div>
+            ))}
+            <div ref={chatEndRef}/>
+          </div>
+          <form onSubmit={sendChat} style={{padding:12, borderTop:'1px solid var(--border)', display:'flex', gap:10}}>
+            <input style={{flex:1, background:'var(--bg3)', border:'1px solid var(--border)', borderRadius:10, padding:'10px 15px', color:'var(--text)', fontSize:12, outline:'none'}} placeholder="Type to team..." value={chatText} onChange={e=>setChatText(e.target.value)}/>
+            <button type="submit" className="btn btn-primary btn-sm">SEND</button>
+          </form>
+        </div>
       </div>
     </div>
   );
 }
-
-/* ==================== LEADERBOARD ==================== */
 function Leaderboard({ user }) {
   const [filter, setFilter] = useState("all");
   const data = filter==="all" ? LEADERBOARD_DATA : LEADERBOARD_DATA.filter(u=>u.role===filter);
@@ -1617,6 +1921,331 @@ function Institutions() {
   );
 }
 
+
+/* ==================== MEDICAL CURRICULUM DATA ==================== */
+const MEDICAL_CURRICULUM = [
+  {
+    id: 'anatomy',
+    title: 'Anatomy',
+    icon: '🫀',
+    desc: 'Structure of the human body, organs and systems.',
+    diagnosticQs: [
+      { q: 'Which valve separates the left atrium from the left ventricle?', opts: ['Tricuspid', 'Mitral', 'Pulmonary', 'Aortic'], ans: 1, difficulty: 'medium' },
+      { q: 'The Circle of Willis is located in which organ?', opts: ['Liver', 'Heart', 'Brain', 'Kidney'], ans: 2, difficulty: 'easy' },
+      { q: 'Which of these is NOT a branch of the celiac trunk?', opts: ['Left gastric', 'Splenic', 'Common hepatic', 'Superior mesenteric'], ans: 3, difficulty: 'hard' }
+    ],
+    lessons: [
+      {
+        id: 'heart-structure',
+        title: 'Cardiac Anatomy & Chambers',
+        theory: 'The heart consists of four chambers: two atria and two ventricles. The left side handles oxygenated blood from the lungs, while the right side handles deoxygenated blood from the body.',
+        facts: ['The myocardium is thickest in the left ventricle.', 'The SA node is the natural pacemaker.', 'Coronary arteries supply the heart muscle.'],
+        mnemonic: 'TPMA: Toilet Paper My Ass (Tricuspid, Pulmonary, Mitral, Aortic) - Valve order.',
+        quiz: [
+          { q: 'Which chamber pumps blood to the aorta?', opts: ['RA', 'LA', 'RV', 'LV'], ans: 3 },
+          { q: 'The thickest wall of the heart is found in:', opts: ['RV', 'LV', 'RA', 'LA'], ans: 1 }
+        ]
+      }
+    ]
+  },
+  {
+    id: 'physiology',
+    title: 'Physiology',
+    icon: '⚡',
+    desc: 'Functional mechanisms of the human body.',
+    diagnosticQs: [
+      { q: 'What is the primary stimulus for breathing in a healthy person?', opts: ['Low O2', 'High CO2', 'Low pH', 'High O2'], ans: 1, difficulty: 'medium' },
+      { q: 'Where does most nutrient absorption occur?', opts: ['Stomach', 'Large Intestine', 'Small Intestine', 'Esophagus'], ans: 2, difficulty: 'easy' }
+    ],
+    lessons: [
+      {
+        id: 'cardiac-cycle',
+        title: 'The Cardiac Cycle',
+        theory: 'The cycle involves systole (contraction) and diastole (relaxation). Stroke volume is the amount of blood pumped per beat.',
+        facts: ['CO = HR x SV', 'Ejection fraction is typically 55-70%', 'The first heart sound (S1) is closure of AV valves.'],
+        quiz: [{ q: 'Stroke Volume x Heart Rate equals:', opts: ['BP', 'Cardiac Output', 'MAP', 'TPR'], ans: 1 }]
+      }
+    ]
+  },
+  {
+    id: 'pharmacology',
+    title: 'Pharmacology',
+    icon: '💊',
+    desc: 'Drug actions, side effects, and mechanisms.',
+    diagnosticQs: [
+      { q: 'Mechanism of action of Beta-blockers:', opts: ['Antagonize B-receptors', 'Agonize B-receptors', 'Block Ca channels', 'Inhibit ACE'], ans: 0, difficulty: 'easy' },
+      { q: 'Which drug is a classic inhibitor of Vitamin K epoxide reductase?', opts: ['Heparin', 'Warfarin', 'Aspirin', 'Clopidogrel'], ans: 1, difficulty: 'hard' }
+    ],
+    lessons: [
+      {
+        id: 'anti-hypertensives',
+        title: 'Hypertension Management',
+        theory: 'Classes include ACE inhibitors, ARBs, Beta-blockers, and Diuretics. ACE inhibitors often cause a dry cough.',
+        facts: ['ACEIs block conversion of Angiotensin I to II.', 'Loop diuretics act on the thick ascending limb.', 'Beta-blockers reduce heart rate.'],
+        quiz: [{ q: 'Common side effect of ACE inhibitors:', opts: ['Edema', 'Dry cough', 'Headache', 'Rash'], ans: 1 }]
+      }
+    ]
+  }
+];
+
+/* ==================== LEARNING COMPONENT ==================== */
+function Learning({ user, updateUser }) {
+  const [mode, setMode] = React.useState('menu');
+  const [activeTopic, setActiveTopic] = React.useState(null);
+  const [quizQs, setQuizQs] = React.useState([]);
+  const [quizIdx, setQuizIdx] = React.useState(0);
+  const [picked, setPicked] = React.useState(null);
+  const [revealed, setRevealed] = React.useState(false);
+  const [quizResults, setQuizResults] = React.useState([]);
+  const [loadingQs, setLoadingQs] = React.useState(false);
+  const ML = 'http://localhost:5001';
+
+  const TOPICS = [
+    {id:'Anatomy',        icon:'🦴', color:'#38bdf8', desc:'Body structure and organ relationships'},
+    {id:'Physiology',     icon:'⚡', color:'#34d399', desc:'How body systems function'},
+    {id:'Pharmacology',   icon:'💊', color:'#818cf8', desc:'Drug mechanisms and clinical use'},
+    {id:'Pathology',      icon:'🔬', color:'#f472b6', desc:'Disease at cellular and tissue level'},
+    {id:'Microbiology',   icon:'🦠', color:'#fb923c', desc:'Bacteria, viruses and immunity'},
+    {id:'Biochemistry',   icon:'🧪', color:'#fbbf24', desc:'Metabolic pathways and enzymes'},
+    {id:'Clinical Medicine',icon:'🩺',color:'#38bdf8', desc:'Diagnosis and disease management'},
+    {id:'Surgery',        icon:'🔪', color:'#f87171', desc:'Surgical emergencies and technique'}
+  ];
+
+  const THEORY = {
+    'Anatomy':          { overview:'Anatomy is the foundation of all clinical medicine. Understand precise organ locations, spatial relationships, and nerve supplies.',          facts:['Femur is the longest bone','SA node: 60-100 bpm pacemaker','Phrenic nerve C3,4,5 → diaphragm','Radial nerve injury = wrist drop','Mitral valve = left side (LA→LV)'],          mnemonic:`TPMA valve order: Toilet Paper My Ass → Tricuspid, Pulmonary, Mitral, Aortic
+C3, 4, 5 keeps the diaphragm alive!` },
+    'Physiology':       { overview:'Physiology explains HOW the body works. Master cardiac output, acid-base, and renal regulation for clinical reasoning.',                     facts:['CO = HR x SV = 5 L/min normal','EF <40% = HFrEF (systolic failure)','K+ sets resting membrane potential','ADH → water retention (collecting duct)','GFR = 120 mL/min normally'],          mnemonic:`ROME: Respiratory Opposite (pH↓, CO2↑), Metabolic Equal (pH↓, HCO3↓)
+Frank-Starling: more stretch = more force (up to a point)` },
+    'Pharmacology':     { overview:'Pharmacology covers drug mechanisms, interactions, and clinical prescribing. Focus on mechanisms and key side effects.',                      facts:['ACEIs (-pril): dry cough side effect','Aspirin: irreversible COX-1 and COX-2 inhibitor','Metformin: activates AMPK → ↓ gluconeogenesis','Rifampin: CYP450 inducer → ↓ warfarin effect','Azithromycin: blocks hERG → QT prolongation'],mnemonic:`ACE inhibitors end in -pril. ARBs end in -sartan. Beta-blockers end in -olol.
+"Some Drugs Create Awesome Pharmacology": Sulfonamides, Diuretics, CCBs, ACEIs, Penicillins` },
+    'Pathology':        { overview:'Pathology is the study of disease mechanisms at tissue and cellular level. Key areas: necrosis, inflammation, neoplasia.',                     facts:['TB → caseous necrosis','Reed-Sternberg cells → Hodgkin lymphoma','BRCA1/2 = homologous recombination defect','Wire-loop lesions = Lupus nephritis Class IV','MSI-H colorectal cancer responds to pembrolizumab'], mnemonic:'Necrosis mnemonics: Can Liquids Cause Fat Fibrin? = Coagulative, Liquefactive, Caseous, Fat, Fibrinoid' },
+    'Microbiology':     { overview:'Microbiology covers pathogens, virulence factors, resistance mechanisms and their clinical presentations.',                                    facts:['E. coli = #1 UTI cause (80%)','S. aureus = coagulase positive','MRSA: mecA gene → PBP2a → pan β-lactam resistance','CD8+ CTLs control acute HIV viremia','Superantigens: activate 5-20% of all T cells non-specifically'], mnemonic:`Gram+ cocci clusters = Staph. Gram+ cocci chains = Strep.
+For UTI: "E. Klebsi-cola, Pseudo-Proteus" = E.coli, Klebsiella, Pseudomonas, Proteus` },
+    'Biochemistry':     { overview:'Biochemistry covers metabolic pathways, vitamins, and molecular biology relevant to clinical medicine and pharmacology.',                      facts:['ATP = universal energy currency','Pyruvate kinase deficiency → hemolytic anemia (RBCs need glycolysis)','OTC deficiency = most common urea cycle defect','Complex I inhibited by rotenone (metformin mechanism)','Vit C essential for collagen hydroxylation (proline/lysine)'], mnemonic:`ETC order: NADH → Complex I → Q → Complex III → Cytochrome c → Complex IV → O2
+Urea cycle starts and ends with Ornithine (mnemonic: Ordinarily Careless Crappers)` },
+    'Clinical Medicine':{ overview:'Clinical Medicine integrates pathophysiology with real diagnosis and treatment decisions. High-yield for exams and clinical work.',              facts:['S. pneumoniae = #1 CAP cause','Troponin rises 3-6h post-MI, peaks 24-48h','tPA for ischaemic stroke: give within 4.5h','DKA: IV fluids FIRST, then insulin, monitor K+','Sepsis: 30 mL/kg IV + antibiotics within 1h'], mnemonic:`FAST for stroke: Face drooping, Arm weakness, Speech difficulty, Time to call 999
+DKA triad: hyperglycaemia + ketosis + metabolic acidosis` },
+    'Surgery':          { overview:'Surgery covers acute abdomen, trauma assessment, and post-operative complications. ATLS principles are essential.',                            facts:['Rovsing sign: LLQ pressure causes RLQ pain','Tension PTX: needle decompression 2nd ICS MCL immediately','Pyloric stenosis: correct electrolytes BEFORE pyloromyotomy','Early dumping: 15-30 min, fluid shift. Late dumping: 1-3h, reactive hypoglycaemia','Anastomotic leak risk highest <5cm from anal verge'], mnemonic:`ATLS primary survey: ABCDE (Airway, Breathing, Circulation, Disability, Exposure)
+Tension PTX = clinical diagnosis — act immediately, no CXR needed!` }
+  };
+
+  async function loadQuiz(topicId) {
+    setLoadingQs(true); setQuizQs([]); setQuizIdx(0); setPicked(null); setRevealed(false); setQuizResults([]);
+    try {
+      const r = await fetch(ML + '/api/ml/questions?topic=' + encodeURIComponent(topicId) + '&n=5');
+      const d = await r.json();
+      setQuizQs(d.questions || []);
+    } catch(e) { setQuizQs([]); }
+    setLoadingQs(false);
+  }
+
+  function openTopic(t) { setActiveTopic(t); setMode('theory'); }
+
+  function startQuiz() { loadQuiz(activeTopic.id); setMode('quiz'); }
+
+  function submitAnswer() {
+    const q = quizQs[quizIdx];
+    const correct = picked === q.correct_index;
+    setRevealed(true);
+    setQuizResults(prev => [...prev, { correct }]);
+  }
+
+  function nextQ() {
+    if (quizIdx < quizQs.length - 1) {
+      setQuizIdx(i => i + 1); setPicked(null); setRevealed(false);
+    } else {
+      const allResults = [...quizResults, { correct: picked === quizQs[quizIdx]?.correct_index }];
+      const score = allResults.filter(r => r.correct).length;
+      const pct = Math.round(score / quizQs.length * 100);
+      if (pct >= 60) {
+        const rm = [...(user.roadmap || [])];
+        const idx = rm.findIndex(r => r.id === activeTopic.id);
+        if (idx >= 0) rm[idx].completed = true;
+        else rm.push({ id: activeTopic.id, completed: true, status: 'done' });
+        updateUser({ roadmap: rm, xp: user.xp + 100, score: user.score + score * 20 });
+        notify('Topic mastered! +100 XP', 'success');
+      } else {
+        notify('Score: ' + pct + '% — Try again to master this topic', 'warn');
+      }
+      setMode('menu');
+    }
+  }
+
+  function isCompleted(id) { return (user.roadmap || []).some(r => (r.id === id || r.topic === id) && r.completed); }
+
+  /* ── THEORY VIEW ── */
+  if (mode === 'theory' && activeTopic) {
+    const th = THEORY[activeTopic.id] || {};
+    return (
+      <div className="page-content fade-in">
+        <div style={{display:'flex', gap:10, alignItems:'center', marginBottom:20}}>
+          <button className="btn btn-outline btn-sm" onClick={() => setMode('menu')}>← Back to Topics</button>
+          <span style={{fontSize:22}}>{activeTopic.icon}</span>
+          <h2 style={{fontSize:20, fontWeight:800}}>{activeTopic.id}</h2>
+        </div>
+
+        <div className="card" style={{marginBottom:14, borderLeft:'3px solid '+activeTopic.color}}>
+          <div className="lesson-section-label">📖 Overview</div>
+          <p style={{lineHeight:1.7, fontSize:14, color:'var(--text)'}}>{th.overview}</p>
+        </div>
+
+        <div className="card" style={{marginBottom:14}}>
+          <div className="lesson-section-label">🔑 Key Facts</div>
+          {(th.facts || []).map((f, i) => (
+            <div key={i} className="keyfact"><span>🔹</span><span>{f}</span></div>
+          ))}
+        </div>
+
+        <div className="mnemonic-box" style={{marginBottom:20}}>
+          <div className="lesson-section-label">🧠 Memory Tricks</div>
+          <p style={{whiteSpace:'pre-line', fontSize:13, lineHeight:1.7}}>{th.mnemonic}</p>
+        </div>
+
+        <div className="clinical-box" style={{marginBottom:24}}>
+          <strong style={{color:'var(--accent)'}}>🏥 Clinical Application:</strong>
+          <span style={{color:'var(--text2)'}}> Understanding {activeTopic.id} helps you correctly diagnose, investigate and manage patients in real clinical scenarios.</span>
+        </div>
+
+        <button className="btn btn-primary btn-lg" onClick={startQuiz}>
+          Test Your Knowledge with ML Quiz →
+        </button>
+      </div>
+    );
+  }
+
+  /* ── QUIZ VIEW ── */
+  if (mode === 'quiz') {
+    if (loadingQs) return (
+      <div className="page-content" style={{textAlign:'center', paddingTop:80}}>
+        <div style={{fontSize:32, marginBottom:16}}>🤖</div>
+        <p style={{color:'var(--text2)'}}>Loading questions from ML model…</p>
+      </div>
+    );
+
+    if (!quizQs.length) return (
+      <div className="page-content fade-in">
+        <button className="btn btn-outline btn-sm" style={{marginBottom:20}} onClick={() => setMode('menu')}>← Back</button>
+        <div className="card" style={{textAlign:'center', padding:32, borderColor:'var(--danger)'}}>
+          <div style={{fontSize:40, marginBottom:12}}>⚠️</div>
+          <h3>ML API Not Reachable</h3>
+          <p style={{color:'var(--text2)', marginTop:8, fontSize:14}}>Start the ML API server first:</p>
+          <code style={{display:'block', background:'var(--bg3)', padding:'10px 16px', borderRadius:8, marginTop:12, fontSize:13}}>python ml_api.py</code>
+          <button className="btn btn-outline btn-sm" style={{marginTop:20}} onClick={() => setMode('menu')}>Back to Topics</button>
+        </div>
+      </div>
+    );
+
+    const q = quizQs[quizIdx];
+    const prog = (quizIdx / quizQs.length) * 100;
+
+    return (
+      <div className="page-content fade-in">
+        <div style={{display:'flex', gap:10, alignItems:'center', marginBottom:12}}>
+          <button className="btn btn-outline btn-sm" onClick={() => setMode('menu')}>← Exit Quiz</button>
+          <span style={{fontSize:13, color:'var(--text3)'}}>Q{quizIdx+1}/{quizQs.length} — {activeTopic.id}</span>
+          <span className={"diff-tag diff-"+q.difficulty} style={{marginLeft:'auto'}}>{q.difficulty}</span>
+          {q.ml_predicted && <span style={{fontSize:10, color:'var(--text3)'}}>ML: {q.ml_predicted}</span>}
+        </div>
+
+        <div style={{height:4, background:'var(--bg4)', borderRadius:2, marginBottom:16}}>
+          <div style={{height:'100%', background:activeTopic.color, width:prog+'%', borderRadius:2, transition:'width .4s'}}/>
+        </div>
+
+        <div className="card" style={{marginBottom:14}}>
+          <p style={{fontSize:16, fontWeight:600, lineHeight:1.6}}>{q.question}</p>
+        </div>
+
+        {q.options.map((opt, i) => {
+          let bg = 'var(--bg3)', bc = 'var(--border)', col = 'var(--text)';
+          if (revealed) {
+            if (i === q.correct_index) { bg='rgba(52,211,153,0.12)'; bc='var(--success)'; col='var(--success)'; }
+            else if (i === picked)     { bg='rgba(248,113,113,0.12)'; bc='var(--danger)';  col='var(--danger)'; }
+          } else if (i === picked) { bg='rgba(56,189,248,0.1)'; bc='var(--accent)'; }
+          return (
+            <div key={i} onClick={() => !revealed && setPicked(i)}
+              style={{padding:'13px 16px', borderRadius:8, border:'1px solid '+bc, background:bg, color:col,
+                marginBottom:8, cursor:revealed?'default':'pointer', fontSize:14, transition:'all .15s'}}>
+              <span style={{fontWeight:700, marginRight:8, color:'var(--text3)'}}>{String.fromCharCode(65+i)}.</span>{opt}
+            </div>
+          );
+        })}
+
+        {revealed && (
+          <div className="card" style={{marginTop:12, borderLeft:'3px solid var(--accent2)', background:'rgba(129,140,248,0.05)'}}>
+            <div className="lesson-section-label">Explanation</div>
+            <p style={{fontSize:13, lineHeight:1.6, color:'var(--text2)'}}>{q.explanation}</p>
+          </div>
+        )}
+
+        <div style={{marginTop:16}}>
+          {!revealed
+            ? <button className="btn btn-outline" disabled={picked === null} onClick={submitAnswer}>Check Answer</button>
+            : <button className="btn btn-primary" onClick={nextQ}>{quizIdx < quizQs.length-1 ? 'Next Question →' : 'Finish Topic ✓'}</button>
+          }
+        </div>
+      </div>
+    );
+  }
+
+  /* ── MAIN MENU ── */
+  return (
+    <div className="page-content fade-in">
+      <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:24}}>
+        <div>
+          <h2 style={{fontSize:24, fontWeight:800}}>🗺️ Learning Path</h2>
+          <p style={{color:'var(--text2)', marginTop:4}}>Select a topic — study theory then take a ML-powered quiz</p>
+        </div>
+        <button className="btn btn-outline btn-sm" onClick={() => { updateUser({roadmap:[]}); notify('Progress reset','info'); }}>
+          Reset Progress
+        </button>
+      </div>
+
+      <div className="grid g2" style={{gap:14, marginBottom:20}}>
+        {TOPICS.map(t => {
+          const done = isCompleted(t.id);
+          return (
+            <div key={t.id} className="card" style={{cursor:'pointer', borderColor:done?t.color+'88':'var(--border)',
+              background:done?t.color+'0a':'var(--card)', transition:'all .2s'}}
+              onClick={() => openTopic(t)}
+              onMouseEnter={e => e.currentTarget.style.borderColor = t.color}
+              onMouseLeave={e => e.currentTarget.style.borderColor = done?t.color+'88':'var(--border)'}>
+              <div style={{display:'flex', gap:12, alignItems:'center'}}>
+                <div style={{width:46, height:46, borderRadius:12, background:t.color+'22',
+                  display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0}}>
+                  {t.icon}
+                </div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700, fontSize:15, color:done?t.color:'var(--text)'}}>{t.id}</div>
+                  <div style={{fontSize:12, color:'var(--text3)', marginTop:2}}>{t.desc}</div>
+                </div>
+                <div>
+                  {done
+                    ? <span style={{fontSize:11,fontWeight:700,padding:'3px 8px',borderRadius:4,background:t.color+'22',color:t.color}}>✓ Done</span>
+                    : <span style={{fontSize:18}}>→</span>
+                  }
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="card" style={{background:'rgba(56,189,248,0.04)', borderColor:'var(--border2)'}}>
+        <div style={{display:'flex', gap:12, alignItems:'center'}}>
+          <span style={{fontSize:28}}>🤖</span>
+          <div>
+            <div style={{fontWeight:700, fontSize:13}}>ML-Powered Adaptive Quizzes</div>
+            <div style={{fontSize:12, color:'var(--text3)', marginTop:3}}>
+              Each quiz uses your trained ML model (SVM classifier, 49 clinical questions, 8 topics, adaptive difficulty).
+              Make sure <code style={{background:'var(--bg3)', padding:'1px 5px', borderRadius:3}}>python ml_api.py</code> is running.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ==================== NOTIFICATION COMPONENT ==================== */
 function NotifToast() {
   const [notif, setNotif] = useState(null);
@@ -1681,6 +2310,7 @@ function App() {
   if (showPreQuiz) return <><PreQuiz onComplete={handlePreQuiz}/><NotifToast/></>;
 
   const pages = {
+    learning: <Learning user={user} updateUser={updateUser}/>,
     dashboard: <Dashboard user={user} setPage={setPage}/>,
     simulation: <Simulation user={user} updateUser={updateUser}/>,
     quiz: <Quiz user={user} updateUser={updateUser}/>,
