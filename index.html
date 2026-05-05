@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedLearn — Gamified Medical Learning Platform</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --bg2: #111827;
+    --bg3: #1a2235;
+    --bg4: #1e2d45;
+    --card: #131c2e;
+    --border: rgba(99,179,237,0.12);
+    --border2: rgba(99,179,237,0.22);
+    --accent: #38bdf8;
+    --accent2: #818cf8;
+    --accent3: #34d399;
+    --accent4: #f472b6;
+    --accent5: #fb923c;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --danger: #f87171;
+    --warn: #fbbf24;
+    --success: #34d399;
+    --r: 12px;
+    --r2: 8px;
+    --shadow: 0 4px 32px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  h1,h2,h3,h4 { font-family: 'Syne', sans-serif; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* Layout */
+  .app-shell { display: flex; min-height: 100vh; }
+  .sidebar {
+    width: 240px; min-height: 100vh; background: var(--card);
+    border-right: 1px solid var(--border); display: flex;
+    flex-direction: column; position: fixed; top: 0; left: 0; z-index: 100;
+  }
+  .sidebar-logo {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .logo-text { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: var(--text); }
+  .logo-sub { font-size: 11px; color: var(--text3); margin-top: -2px; }
+  .sidebar-nav { flex: 1; padding: 12px 10px; display: flex; flex-direction: column; gap: 2px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    border-radius: var(--r2); cursor: pointer; font-size: 14px; font-weight: 500;
+    color: var(--text2); transition: all .15s; border: none; background: none; width: 100%; text-align: left;
+  }
+  .nav-item:hover { background: var(--bg4); color: var(--text); }
+  .nav-item.active { background: rgba(56,189,248,0.12); color: var(--accent); }
+  .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+  .nav-section { font-size: 10px; font-weight: 700; color: var(--text3); padding: 12px 12px 4px; letter-spacing: .08em; text-transform: uppercase; }
+  .sidebar-user {
+    padding: 14px 16px; border-top: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .user-avatar {
+    width: 34px; height: 34px; border-radius: 50%; font-size: 14px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .main-content { margin-left: 240px; flex: 1; min-height: 100vh; }
+  .top-bar {
+    height: 60px; background: var(--card); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px; position: sticky; top: 0; z-index: 50;
+  }
+  .page-content { padding: 28px; max-width: 1200px; }
+
+  /* Cards */
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 20px;
+  }
+  .card-sm { padding: 14px 16px; }
+  .grid { display: grid; gap: 16px; }
+  .g2 { grid-template-columns: repeat(2, 1fr); }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+
+  /* Stat cards */
+  .stat-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 18px 20px;
+  }
+  .stat-label { font-size: 12px; color: var(--text3); font-weight: 500; text-transform: uppercase; letter-spacing: .06em; }
+  .stat-value { font-size: 28px; font-weight: 800; font-family: 'Syne', sans-serif; margin-top: 6px; }
+  .stat-sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 18px; border-radius: var(--r2); font-size: 14px; font-weight: 600;
+    cursor: pointer; border: none; font-family: 'DM Sans', sans-serif; transition: all .15s;
+  }
+  .btn-primary { background: var(--accent); color: #0a0e1a; }
+  .btn-primary:hover { background: #7dd3f9; transform: translateY(-1px); }
+  .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border2); }
+  .btn-outline:hover { background: var(--bg4); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-success { background: var(--success); color: #0a0e1a; }
+  .btn-sm { padding: 7px 12px; font-size: 13px; }
+  .btn-lg { padding: 14px 28px; font-size: 16px; }
+  .btn-block { width: 100%; justify-content: center; }
+
+  /* Badges */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600;
+  }
+  .badge-blue { background: rgba(56,189,248,0.15); color: var(--accent); }
+  .badge-green { background: rgba(52,211,153,0.15); color: var(--success); }
+  .badge-purple { background: rgba(129,140,248,0.15); color: var(--accent2); }
+  .badge-orange { background: rgba(251,146,60,0.15); color: var(--accent5); }
+  .badge-pink { background: rgba(244,114,182,0.15); color: var(--accent4); }
+  .badge-red { background: rgba(248,113,113,0.15); color: var(--danger); }
+
+  /* Progress */
+  .progress-bar { height: 6px; background: var(--bg4); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 3px; transition: width .5s ease; }
+
+  /* Forms */
+  input, select, textarea {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--r2); color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 14px; padding: 10px 14px; width: 100%; outline: none; transition: border .15s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  label { font-size: 13px; color: var(--text2); margin-bottom: 5px; display: block; font-weight: 500; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 16px; }
+
+  /* Divider */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+  /* Tag */
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+
+  /* Animations */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
+  @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+  .fade-in { animation: fadeIn .3s ease; }
+
+  /* Notification */
+  .notif {
+    position: fixed; top: 20px; right: 20px; z-index: 9999;
+    background: var(--card); border: 1px solid var(--border2); border-radius: var(--r);
+    padding: 14px 18px; max-width: 320px; box-shadow: var(--shadow);
+    animation: fadeIn .3s ease; display: flex; align-items: flex-start; gap: 10px;
+  }
+
+  /* Modals */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.7);
+    z-index: 200; display: flex; align-items: center; justify-content: center;
+  }
+  .modal {
+    background: var(--card); border: 1px solid var(--border2); border-radius: var(--r);
+    padding: 28px; max-width: 540px; width: 90vw; max-height: 90vh;
+    overflow-y: auto; animation: fadeIn .25s ease;
+  }
+  .modal-lg { max-width: 800px; }
+
+  /* Auth */
+  .auth-page {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: var(--bg);
+    background-image: radial-gradient(circle at 20% 50%, rgba(56,189,248,0.05) 0%, transparent 50%),
+                      radial-gradient(circle at 80% 20%, rgba(129,140,248,0.05) 0%, transparent 50%);
+  }
+  .auth-card {
+    background: var(--card); border: 1px solid var(--border2);
+    border-radius: 16px; padding: 40px; width: 420px; max-width: 95vw;
+    box-shadow: var(--shadow);
+  }
+
+  /* Simulation */
+  .sim-patient { border-left: 3px solid var(--accent5); }
+  .choice-opt {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: var(--r2);
+    padding: 12px 16px; cursor: pointer; font-size: 14px; transition: all .15s;
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .choice-opt:hover { border-color: var(--accent); background: rgba(56,189,248,0.06); }
+  .choice-opt.selected { border-color: var(--accent); background: rgba(56,189,248,0.12); }
+  .choice-opt.correct { border-color: var(--success); background: rgba(52,211,153,0.12); }
+  .choice-opt.wrong { border-color: var(--danger); background: rgba(248,113,113,0.12); }
+
+  /* Quiz */
+  .quiz-opt {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: var(--r2); padding: 14px 18px; cursor: pointer;
+    font-size: 14px; transition: all .15s; margin-bottom: 8px;
+  }
+  .quiz-opt:hover:not(.disabled) { border-color: var(--accent); background: rgba(56,189,248,0.07); }
+  .quiz-opt.selected { border-color: var(--accent2); background: rgba(129,140,248,0.1); }
+  .quiz-opt.correct { border-color: var(--success) !important; background: rgba(52,211,153,0.12) !important; }
+  .quiz-opt.wrong { border-color: var(--danger) !important; background: rgba(248,113,113,0.12) !important; }
+  .quiz-opt.disabled { cursor: default; }
+
+  /* Leaderboard */
+  .lb-row {
+    display: flex; align-items: center; gap: 14px; padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .lb-rank { font-size: 18px; font-weight: 800; font-family: 'Syne', sans-serif; width: 32px; text-align: center; }
+
+  /* Room */
+  .chat-msg { margin-bottom: 10px; }
+  .chat-bubble {
+    display: inline-block; padding: 8px 12px; border-radius: 10px;
+    font-size: 13px; max-width: 280px;
+  }
+  .chat-bubble.me { background: rgba(56,189,248,0.15); color: var(--accent); }
+  .chat-bubble.them { background: var(--bg3); color: var(--text); }
+
+  /* Level progress */
+  .level-badge {
+    width: 48px; height: 48px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px;
+  }
+
+  /* Scrollable */
+  .scroll-y { overflow-y: auto; }
+
+  @media (max-width: 900px) {
+    .sidebar { width: 200px; }
+    .main-content { margin-left: 200px; }
+    .g4 { grid-template-columns: repeat(2, 1fr); }
+    .g3 { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 640px) {
+    .sidebar { transform: translateX(-200px); }
+    .main-content { margin-left: 0; }
+    .g2,.g3,.g4 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+/* ==================== DATA ==================== */
+
+const MOCK_CASES = [
+  {
+    id: 1, title: "Chest Pain — 58M", difficulty: "beginner",
+    specialty: "Cardiology",
+    presentation: "A 58-year-old male presents to the ER with sudden onset severe crushing chest pain radiating to the left arm. BP 160/95, HR 110 bpm, diaphoresis noted. Pain started 2 hours ago.",
+    vitals: { temp: "36.8°C", bp: "160/95 mmHg", hr: "110 bpm", spo2: "95%", rr: "22/min" },
+    history: "Hypertension, Type 2 DM, smoker (30 pack-years), no prior cardiac events.",
+    symptoms: ["Crushing chest pain", "Left arm radiation", "Diaphoresis", "Shortness of breath", "Nausea"],
+    investigations: ["ECG", "Troponin I", "CBC", "CXR", "Echo"],
+    diagnosisOptions: [
+      { id: "a", text: "STEMI (ST-Elevation Myocardial Infarction)", correct: true },
+      { id: "b", text: "Unstable Angina" },
+      { id: "c", text: "Pulmonary Embolism" },
+      { id: "d", text: "Aortic Dissection" }
+    ],
+    treatmentOptions: [
+      { id: "a", text: "Aspirin 300mg + Primary PCI", correct: true },
+      { id: "b", text: "IV Heparin + Thrombolytics only" },
+      { id: "c", text: "Nitroglycerin + Observation" },
+      { id: "d", text: "Morphine + Discharge" }
+    ],
+    outcome: "Patient stabilized after primary PCI. Door-to-balloon time was 48 minutes. Ejection fraction preserved at 55%.",
+    learning: "STEMI requires rapid reperfusion. Door-to-balloon time should be <90 minutes. Aspirin and anticoagulation are cornerstone therapies.",
+    points: 120
+  },
+  {
+    id: 2, title: "Fever + Rash — 8F", difficulty: "beginner",
+    specialty: "Pediatrics",
+    presentation: "An 8-year-old girl presents with 3-day history of high fever (39.5°C), diffuse erythematous rash starting from trunk, and bilateral conjunctivitis. No travel history.",
+    vitals: { temp: "39.5°C", bp: "95/60 mmHg", hr: "128 bpm", spo2: "98%", rr: "26/min" },
+    history: "Up-to-date vaccinations. No known drug allergies. No sick contacts reported.",
+    symptoms: ["High fever >5 days", "Bilateral conjunctivitis", "Strawberry tongue", "Erythematous rash", "Hands/feet edema"],
+    investigations: ["CBC + CRP", "ESR", "Echo (coronary artery)", "Blood culture", "LFT"],
+    diagnosisOptions: [
+      { id: "a", text: "Kawasaki Disease", correct: true },
+      { id: "b", text: "Scarlet Fever" },
+      { id: "c", text: "Measles" },
+      { id: "d", text: "Viral Exanthem" }
+    ],
+    treatmentOptions: [
+      { id: "a", text: "IVIG 2g/kg + Aspirin", correct: true },
+      { id: "b", text: "Antibiotics only" },
+      { id: "c", text: "Antipyretics + Hydration" },
+      { id: "d", text: "Steroids monotherapy" }
+    ],
+    outcome: "After IVIG + Aspirin, fever resolved in 36 hours. Echo showed mild coronary artery dilation that resolved at 6-week follow-up.",
+    learning: "Kawasaki Disease: 5 days fever + 4/5 criteria (rash, conjunctivitis, mucous membrane changes, extremity changes, cervical lymphadenopathy). IVIG reduces coronary aneurysm risk.",
+    points: 100
+  },
+  {
+    id: 3, title: "Confusion + Polyuria — 45M", difficulty: "intermediate",
+    specialty: "Endocrinology",
+    presentation: "A 45-year-old male brought in confused. History of polydipsia and polyuria for 2 weeks. No prior diagnosis. On exam: Kussmaul breathing, fruity breath odour noted. Partner reports weight loss of 8kg over 1 month.",
+    vitals: { temp: "37.0°C", bp: "95/65 mmHg", hr: "122 bpm", spo2: "99%", rr: "28/min" },
+    history: "No prior medical history. Family history: father has Type 2 DM.",
+    symptoms: ["Confusion / altered sensorium", "Kussmaul breathing", "Fruity odour", "Polydipsia / polyuria", "Weight loss"],
+    investigations: ["RBS/HbA1c", "Blood gas (ABG)", "Serum electrolytes", "Urine ketones", "Serum osmolality"],
+    diagnosisOptions: [
+      { id: "a", text: "Diabetic Ketoacidosis (DKA)", correct: true },
+      { id: "b", text: "Hyperosmolar Hyperglycaemic State (HHS)" },
+      { id: "c", text: "Lactic Acidosis" },
+      { id: "d", text: "Hypoglycaemia" }
+    ],
+    treatmentOptions: [
+      { id: "a", text: "IV Fluids + Insulin infusion + K⁺ replacement", correct: true },
+      { id: "b", text: "Oral hypoglycaemics + Observation" },
+      { id: "c", text: "Glucagon 1mg IV" },
+      { id: "d", text: "Sodium bicarbonate alone" }
+    ],
+    outcome: "DKA resolved in 18 hours with aggressive fluid resuscitation and insulin drip. Transitioned to SC insulin on day 2.",
+    learning: "DKA triad: hyperglycaemia, ketosis, metabolic acidosis. Fluid replacement is the first priority before insulin. Monitor K⁺ closely — falls precipitously with insulin therapy.",
+    points: 150
+  },
+  {
+    id: 4, title: "Sudden Weakness — 67F", difficulty: "intermediate",
+    specialty: "Neurology",
+    presentation: "A 67-year-old female with sudden onset right-sided weakness, facial droop, and slurred speech lasting 2 hours. AF known, not anticoagulated. NIHSS score 12.",
+    vitals: { temp: "37.2°C", bp: "182/98 mmHg", hr: "92 bpm (irregular)", spo2: "97%", rr: "18/min" },
+    history: "Atrial fibrillation diagnosed 1 year ago (not on anticoagulation), hypertension.",
+    symptoms: ["Sudden right hemiplegia", "Facial droop (right)", "Dysarthria", "Gaze deviation left", "No headache"],
+    investigations: ["NCCT head (STAT)", "CT Angiography", "12-lead ECG", "CBC + Coag", "Blood glucose"],
+    diagnosisOptions: [
+      { id: "a", text: "Ischaemic Stroke (Cardioembolic)", correct: true },
+      { id: "b", text: "Haemorrhagic Stroke" },
+      { id: "c", text: "TIA" },
+      { id: "d", text: "Todd's Paralysis post-seizure" }
+    ],
+    treatmentOptions: [
+      { id: "a", text: "IV tPA (if within 4.5h) + Antiplatelets", correct: true },
+      { id: "b", text: "Warfarin immediately + Heparin bolus" },
+      { id: "c", text: "Aspirin 300mg and discharge" },
+      { id: "d", text: "Supportive care only" }
+    ],
+    outcome: "tPA administered at 3h 20min. 24h later, NIHSS improved from 12 to 3. Anticoagulation started on day 3 for AF.",
+    learning: "Ischaemic stroke: time is brain. tPA window is 4.5h from symptom onset. AF is the most common cardioembolic source. NIHSS guides severity and prognosis.",
+    points: 160
+  },
+  {
+    id: 5, title: "Acute Abdomen — 32M", difficulty: "advanced",
+    specialty: "Surgery",
+    presentation: "A 32-year-old male presents with 12-hour history of periumbilical pain migrating to RIF, fever, and anorexia. Rovsing's sign positive. WBC 16,000. Signs of peritonism on exam.",
+    vitals: { temp: "38.8°C", bp: "118/76 mmHg", hr: "104 bpm", spo2: "99%", rr: "20/min" },
+    history: "No prior abdominal surgeries. No current medications. Mild constipation for 3 days.",
+    symptoms: ["Periumbilical → RIF pain migration", "Fever", "Anorexia / vomiting", "Positive Rovsing's sign", "Guarding & rebound tenderness"],
+    investigations: ["CT Abdomen (contrast)", "USS abdomen", "CBC + CRP", "LFT + Amylase", "Urine dipstick"],
+    diagnosisOptions: [
+      { id: "a", text: "Acute Appendicitis (perforated)", correct: true },
+      { id: "b", text: "Meckel's Diverticulitis" },
+      { id: "c", text: "Right Ovarian Torsion" },
+      { id: "d", text: "Mesenteric Adenitis" }
+    ],
+    treatmentOptions: [
+      { id: "a", text: "Emergency laparoscopic appendicectomy + IV antibiotics", correct: true },
+      { id: "b", text: "IV antibiotics alone, conservative management" },
+      { id: "c", text: "USS-guided drainage only" },
+      { id: "d", text: "Oral antibiotics + elective surgery in 6 weeks" }
+    ],
+    outcome: "Laparoscopic appendicectomy performed. Perforated appendix with localised abscess confirmed. IV antibiotics continued for 3 days. Discharged day 4.",
+    learning: "Alvarado score >7 predicts appendicitis with high specificity. CT scan is gold standard. Perforation rate increases significantly after 24h. Laparoscopic approach preferred.",
+    points: 200
+  }
+];
+
+const QUIZ_QUESTIONS = [
+  { id:1, q:"What is the first-line investigation for suspected STEMI?", opts:["CXR","ECG","Troponin","Echo"], ans:1, difficulty:"beginner", exp:"12-lead ECG is the first and most critical investigation. ST elevation in 2 contiguous leads confirms STEMI." },
+  { id:2, q:"Which electrolyte must be carefully monitored during DKA treatment?", opts:["Sodium","Calcium","Potassium","Magnesium"], ans:2, difficulty:"beginner", exp:"Potassium levels drop rapidly with insulin infusion. Replacement is essential to avoid fatal hypokalemia." },
+  { id:3, q:"Kawasaki disease requires fever lasting at least:", opts:["3 days","5 days","7 days","2 weeks"], ans:1, difficulty:"beginner", exp:"By definition, Kawasaki Disease requires fever for at least 5 days plus 4 of 5 criteria." },
+  { id:4, q:"What is the tPA window in ischaemic stroke?", opts:["2 hours","3 hours","4.5 hours","6 hours"], ans:2, difficulty:"intermediate", exp:"IV alteplase (tPA) can be administered up to 4.5 hours from symptom onset in eligible patients." },
+  { id:5, q:"Alvarado score of ≥7 indicates:", opts:["Low risk appendicitis","Moderate risk appendicitis","High probability appendicitis","Definite perforation"], ans:2, difficulty:"intermediate", exp:"Alvarado score ≥7 has high specificity for appendicitis and warrants surgical consultation or CT confirmation." },
+  { id:6, q:"Which artery is most commonly affected in STEMI?", opts:["LCx","LAD","RCA","PDA"], ans:1, difficulty:"intermediate", exp:"The Left Anterior Descending (LAD) artery supplies the anterior wall and is the most common culprit in STEMI." },
+  { id:7, q:"First priority in DKA management:", opts:["Insulin infusion","Bicarbonate","IV fluid resuscitation","Potassium"], ans:2, difficulty:"intermediate", exp:"Aggressive IV fluid replacement (0.9% NaCl) is the first priority, before insulin initiation." },
+  { id:8, q:"NIHSS score of 12 indicates:", opts:["Minor stroke","Moderate stroke","Moderate-severe stroke","Severe stroke"], ans:2, difficulty:"advanced", exp:"NIHSS 11-20 = moderate-severe stroke. Scores guide treatment decisions and prognosis." },
+  { id:9, q:"Kussmaul breathing in DKA results from:", opts:["Hyponatraemia","Respiratory compensation for metabolic acidosis","Pulmonary oedema","Hypernatraemia"], ans:1, difficulty:"advanced", exp:"Kussmaul breathing is a deep, laboured breathing pattern that compensates for metabolic acidosis by reducing CO2." },
+  { id:10, q:"What score determines AF-related stroke risk?", opts:["NIHSS","CURB-65","CHA2DS2-VASc","Alvarado"], ans:2, difficulty:"advanced", exp:"CHA2DS2-VASc score determines anticoagulation need in atrial fibrillation to prevent cardioembolic stroke." }
+];
+
+const LEADERBOARD_DATA = [
+  { id:1, name:"Dr. Priya Sharma", role:"Doctor", level:9, score:4850, accuracy:94, avatar:"PS", color:"#38bdf8" },
+  { id:2, name:"Rahul Mehta", role:"Student", level:8, score:4210, accuracy:89, avatar:"RM", color:"#818cf8" },
+  { id:3, name:"Aisha Nair", role:"Intern", level:8, score:3980, accuracy:87, avatar:"AN", color:"#34d399" },
+  { id:4, name:"Dr. Vikram Rao", role:"Doctor", level:10, score:3750, accuracy:96, avatar:"VR", color:"#f472b6" },
+  { id:5, name:"Sneha Patel", role:"Student", level:7, score:3420, accuracy:82, avatar:"SP", color:"#fb923c" },
+  { id:6, name:"Arjun Singh", role:"Surgeon", level:9, score:3100, accuracy:91, avatar:"AS", color:"#fbbf24" },
+  { id:7, name:"Meera Krishnan", role:"Nurse", level:6, score:2890, accuracy:84, avatar:"MK", color:"#a78bfa" },
+  { id:8, name:"Tarun Das", role:"Student", level:6, score:2650, accuracy:78, avatar:"TD", color:"#38bdf8" },
+  { id:9, name:"Dr. Fatima Ali", role:"Doctor", level:7, score:2400, accuracy:88, avatar:"FA", color:"#34d399" },
+  { id:10, name:"Karan Verma", role:"Intern", level:5, score:2200, accuracy:75, avatar:"KV", color:"#fb923c" }
+];
+
+const INSTITUTIONS = [
+  { name:"AIIMS Delhi", type:"Premier Institute", cases: 142, doctors: 38, badge:"🏛️" },
+  { name:"CMC Vellore", type:"Medical College", cases: 98, doctors: 24, badge:"🏥" },
+  { name:"Manipal Hospital", type:"Hospital Network", cases: 76, doctors: 19, badge:"🏨" },
+  { name:"JIPMER Puducherry", type:"Government Institute", cases: 89, doctors: 22, badge:"🎓" },
+  { name:"Kokilaben Hospital", type:"Corporate Hospital", cases: 54, doctors: 15, badge:"💊" },
+  { name:"PGI Chandigarh", type:"Premier Institute", cases: 113, doctors: 29, badge:"⚕️" }
+];
+
+const ROLES = [
+  { id:"intern", label:"Intern", color:"#38bdf8", icon:"🩺", desc:"First-year medical graduate", perk:"Learning bonus +10%" },
+  { id:"doctor", label:"Doctor", color:"#34d399", icon:"👨‍⚕️", desc:"General physician or specialist", perk:"Diagnosis accuracy bonus" },
+  { id:"nurse", label:"Nurse", color:"#818cf8", icon:"💉", desc:"Registered nursing professional", perk:"Treatment selection bonus" },
+  { id:"surgeon", label:"Surgeon", color:"#f472b6", icon:"🔪", desc:"Surgical specialist", perk:"Procedure cases unlocked" }
+];
+
+/* ==================== NOTIFICATION ==================== */
+let setGlobalNotif = null;
+function notify(msg, type="info") {
+  if (setGlobalNotif) setGlobalNotif({ msg, type, id: Date.now() });
+}
+
+/* ==================== AUTH ==================== */
+function AuthPage({ onAuth }) {
+  const [mode, setMode] = useState("login");
+  const [form, setForm] = useState({ name:"", email:"", password:"", role:"student" });
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+
+  function submit(e) {
+    e.preventDefault(); setErr("");
+    if (!form.email || !form.password) { setErr("All fields required"); return; }
+    if (mode === "signup" && !form.name) { setErr("Name required"); return; }
+    setLoading(true);
+    setTimeout(() => {
+      const users = JSON.parse(localStorage.getItem("ml_users") || "[]");
+      if (mode === "login") {
+        const u = users.find(u => u.email === form.email && u.password === form.password);
+        if (!u) { setErr("Invalid credentials"); setLoading(false); return; }
+        localStorage.setItem("ml_current", JSON.stringify(u));
+        onAuth(u);
+      } else {
+        if (users.find(u => u.email === form.email)) { setErr("Email already registered"); setLoading(false); return; }
+        const newUser = {
+          id: Date.now(), name: form.name, email: form.email,
+          password: form.password, role: form.role,
+          level: 1, xp: 0, score: 0, quizScores: [], casesCompleted: 0,
+          accuracy: 0, totalAnswers: 0, correctAnswers: 0,
+          preQuizDone: false, preQuizLevel: "beginner",
+          color: ["#38bdf8","#818cf8","#34d399","#f472b6","#fb923c"][Math.floor(Math.random()*5)]
+        };
+        users.push(newUser);
+        localStorage.setItem("ml_users", JSON.stringify(users));
+        localStorage.setItem("ml_current", JSON.stringify(newUser));
+        onAuth(newUser);
+      }
+      setLoading(false);
+    }, 700);
+  }
+
+  return (
+    <div className="auth-page">
+      <div className="auth-card fade-in">
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <div style={{width:56,height:56,borderRadius:16,background:"linear-gradient(135deg,#38bdf8,#818cf8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,margin:"0 auto 14px"}}>⚕️</div>
+          <h1 style={{fontSize:26,fontWeight:800,marginBottom:4}}>MedLearn</h1>
+          <p style={{color:"var(--text3)",fontSize:13}}>Gamified Medical Learning Platform</p>
+        </div>
+
+        <div style={{display:"flex",background:"var(--bg3)",borderRadius:10,padding:3,marginBottom:22,gap:2}}>
+          {["login","signup"].map(m=>(
+            <button key={m} onClick={()=>setMode(m)} style={{flex:1,padding:"9px 0",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",fontWeight:600,fontSize:14,transition:"all .15s",background:mode===m?"var(--card)":"transparent",color:mode===m?"var(--text)":"var(--text3)"}}>
+              {m==="login"?"Sign In":"Sign Up"}
+            </button>
+          ))}
+        </div>
+
+        <form onSubmit={submit}>
+          {mode==="signup" && (
+            <div className="form-group">
+              <label>Full Name</label>
+              <input placeholder="Dr. Your Name" value={form.name} onChange={e=>setForm({...form,name:e.target.value})} />
+            </div>
+          )}
+          <div className="form-group">
+            <label>Email Address</label>
+            <input type="email" placeholder="you@hospital.com" value={form.email} onChange={e=>setForm({...form,email:e.target.value})} />
+          </div>
+          <div className="form-group">
+            <label>Password</label>
+            <input type="password" placeholder="••••••••" value={form.password} onChange={e=>setForm({...form,password:e.target.value})} />
+          </div>
+          {mode==="signup" && (
+            <div className="form-group">
+              <label>Your Role</label>
+              <select value={form.role} onChange={e=>setForm({...form,role:e.target.value})}>
+                <option value="student">Medical Student</option>
+                <option value="intern">Intern</option>
+                <option value="doctor">Doctor</option>
+                <option value="nurse">Nurse</option>
+                <option value="mentor">Mentor</option>
+              </select>
+            </div>
+          )}
+          {err && <p style={{color:"var(--danger)",fontSize:13,marginBottom:14}}>{err}</p>}
+          <button className="btn btn-primary btn-block btn-lg" disabled={loading} style={{marginTop:4}}>
+            {loading ? "Please wait…" : mode==="login" ? "Sign In →" : "Create Account →"}
+          </button>
+        </form>
+
+        {mode==="login" && (
+          <div style={{marginTop:16,padding:12,background:"var(--bg3)",borderRadius:8,fontSize:12,color:"var(--text3)"}}>
+            <strong style={{color:"var(--text2)"}}>Demo:</strong> Sign up as a new user to start fresh, or use any account you've created.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ==================== PRE-QUIZ ==================== */
+function PreQuiz({ onComplete }) {
+  const [step, setStep] = useState(0);
+  const [answers, setAnswers] = useState([]);
+  const [selected, setSelected] = useState(null);
+
+  const beginnerQs = QUIZ_QUESTIONS.filter(q=>q.difficulty==="beginner").slice(0,5);
+
+  function next() {
+    if (selected===null) return;
+    const newAns = [...answers, selected];
+    if (step < beginnerQs.length-1) {
+      setAnswers(newAns); setSelected(null); setStep(s=>s+1);
+    } else {
+      const correct = newAns.filter((a,i)=>a===beginnerQs[i].ans).length;
+      const score = (correct/beginnerQs.length)*100;
+      let level = score >= 80 ? "advanced" : score >= 50 ? "intermediate" : "beginner";
+      onComplete(level, score);
+    }
+  }
+
+  const q = beginnerQs[step];
+  return (
+    <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"var(--bg)"}}>
+      <div style={{width:560,maxWidth:"95vw"}}>
+        <div style={{textAlign:"center",marginBottom:28}}>
+          <span className="badge badge-blue" style={{fontSize:13,padding:"6px 14px"}}>Pre-Assessment Quiz</span>
+          <h2 style={{fontSize:22,marginTop:12}}>Assess Your Current Level</h2>
+          <p style={{color:"var(--text3)",fontSize:14,marginTop:4}}>5 questions to personalise your learning path</p>
+        </div>
+        <div style={{background:"var(--bg3)",borderRadius:4,height:6,marginBottom:20,overflow:"hidden"}}>
+          <div style={{height:"100%",background:"linear-gradient(90deg,var(--accent),var(--accent2))",width:`${(step/beginnerQs.length)*100}%`,transition:"width .5s"}}/>
+        </div>
+        <div className="card fade-in">
+          <div style={{fontSize:12,color:"var(--text3)",marginBottom:8}}>Question {step+1} of {beginnerQs.length}</div>
+          <p style={{fontSize:16,fontWeight:600,marginBottom:20,lineHeight:1.5}}>{q.q}</p>
+          {q.opts.map((opt,i)=>(
+            <div key={i} className={`quiz-opt ${selected===i?"selected":""}`} onClick={()=>setSelected(i)}>
+              <span style={{marginRight:8,color:selected===i?"var(--accent2)":"var(--text3)",fontWeight:700}}>{String.fromCharCode(65+i)}.</span>
+              {opt}
+            </div>
+          ))}
+          <button className="btn btn-primary" style={{marginTop:16}} disabled={selected===null} onClick={next}>
+            {step < beginnerQs.length-1 ? "Next →" : "See Results →"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ==================== SIDEBAR ==================== */
+function Sidebar({ page, setPage, user, onLogout }) {
+  const nav = [
+    { id:"dashboard", icon:"📊", label:"Dashboard" },
+    { id:"simulation", icon:"🏥", label:"Simulation" },
+    { id:"quiz", icon:"🧠", label:"Quiz" },
+    { id:"multiplayer", icon:"👥", label:"Multiplayer" },
+    { id:"leaderboard", icon:"🏆", label:"Leaderboard" },
+    { id:"profile", icon:"👤", label:"Profile" },
+  ];
+  const secondary = [
+    { id:"mentorship", icon:"🎓", label:"Mentorship" },
+    { id:"counselling", icon:"💬", label:"Counselling" },
+    { id:"institutions", icon:"🏛️", label:"Institutions" },
+  ];
+
+  const initials = user.name.split(" ").map(n=>n[0]).join("").toUpperCase().slice(0,2);
+
+  return (
+    <div className="sidebar">
+      <div className="sidebar-logo">
+        <div className="logo-icon">⚕️</div>
+        <div>
+          <div className="logo-text">MedLearn</div>
+          <div className="logo-sub">Clinical Platform</div>
+        </div>
+      </div>
+      <nav className="sidebar-nav">
+        <div className="nav-section">Main</div>
+        {nav.map(n=>(
+          <button key={n.id} className={`nav-item ${page===n.id?"active":""}`} onClick={()=>setPage(n.id)}>
+            <span className="icon">{n.icon}</span>{n.label}
+          </button>
+        ))}
+        <div className="nav-section" style={{marginTop:8}}>Tools</div>
+        {secondary.map(n=>(
+          <button key={n.id} className={`nav-item ${page===n.id?"active":""}`} onClick={()=>setPage(n.id)}>
+            <span className="icon">{n.icon}</span>{n.label}
+          </button>
+        ))}
+      </nav>
+      <div className="sidebar-user">
+        <div className="user-avatar" style={{background:user.color+"22",color:user.color,fontSize:13}}>
+          {initials}
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontSize:13,fontWeight:600,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user.name}</div>
+          <div style={{fontSize:11,color:"var(--text3)",textTransform:"capitalize"}}>{user.role} • Lv.{user.level}</div>
+        </div>
+        <button onClick={onLogout} style={{background:"none",border:"none",cursor:"pointer",color:"var(--text3)",fontSize:14,padding:"2px"}}>⇠</button>
+      </div>
+    </div>
+  );
+}
+
+/* ==================== DASHBOARD ==================== */
+function Dashboard({ user, setPage }) {
+  const xpToNext = (user.level) * 500;
+  const xpProgress = Math.min((user.xp % xpToNext) / xpToNext * 100, 100);
+
+  return (
+    <div className="page-content fade-in">
+      {/* Welcome */}
+      <div style={{marginBottom:24}}>
+        <h2 style={{fontSize:24,fontWeight:800}}>Welcome back, {user.name.split(" ")[0]} 👋</h2>
+        <p style={{color:"var(--text2)",marginTop:4}}>
+          {new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long"})} — Keep learning!
+        </p>
+      </div>
+
+      {/* Level card */}
+      <div className="card" style={{marginBottom:20,borderColor:user.color+"44",background:`linear-gradient(135deg, var(--card) 60%, ${user.color}11)`}}>
+        <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:14}}>
+          <div className="level-badge" style={{background:user.color+"22",color:user.color}}>
+            {user.level}
+          </div>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:700,fontSize:16}}>Level {user.level} — {user.preQuizLevel?.charAt(0).toUpperCase()+user.preQuizLevel?.slice(1)||"Beginner"}</div>
+            <div style={{fontSize:12,color:"var(--text3)",marginTop:2}}>{user.xp} XP / {xpToNext} XP to Level {user.level+1}</div>
+          </div>
+          <span className={`badge ${user.role==="mentor"?"badge-orange":user.role==="doctor"?"badge-green":"badge-blue"}`} style={{textTransform:"capitalize"}}>{user.role}</span>
+        </div>
+        <div className="progress-bar">
+          <div className="progress-fill" style={{width:`${xpProgress}%`,background:`linear-gradient(90deg,${user.color},${user.color}88)`}}/>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid g4" style={{marginBottom:20}}>
+        <div className="stat-card">
+          <div className="stat-label">Total Score</div>
+          <div className="stat-value" style={{color:"var(--accent)"}}>{user.score.toLocaleString()}</div>
+          <div className="stat-sub">Points earned</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Cases Done</div>
+          <div className="stat-value" style={{color:"var(--accent3)"}}>{user.casesCompleted}</div>
+          <div className="stat-sub">Clinical simulations</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Accuracy</div>
+          <div className="stat-value" style={{color:"var(--accent5)"}}>
+            {user.totalAnswers > 0 ? Math.round(user.correctAnswers/user.totalAnswers*100) : 0}%
+          </div>
+          <div className="stat-sub">{user.correctAnswers}/{user.totalAnswers} correct</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Quizzes</div>
+          <div className="stat-value" style={{color:"var(--accent2)"}}>{user.quizScores?.length||0}</div>
+          <div className="stat-sub">Completed</div>
+        </div>
+      </div>
+
+      {/* Quick actions */}
+      <div className="grid g3" style={{marginBottom:20}}>
+        {[
+          { icon:"🏥", label:"Start Simulation", sub:"5 cases available", page:"simulation", color:"var(--accent)", badge:"NEW" },
+          { icon:"🧠", label:"Take Quiz", sub:"10 questions", page:"quiz", color:"var(--accent2)", badge:null },
+          { icon:"👥", label:"Multiplayer", sub:"Join a room", page:"multiplayer", color:"var(--accent3)", badge:"LIVE" }
+        ].map(a=>(
+          <div key={a.page} className="card" style={{cursor:"pointer",borderColor:a.color+"33",transition:"all .15s"}} onClick={()=>setPage(a.page)}
+               onMouseEnter={e=>e.currentTarget.style.borderColor=a.color}
+               onMouseLeave={e=>e.currentTarget.style.borderColor=a.color+"33"}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+              <span style={{fontSize:24}}>{a.icon}</span>
+              {a.badge && <span className="badge badge-blue" style={{fontSize:10}}>{a.badge}</span>}
+            </div>
+            <div style={{fontWeight:700,fontSize:15}}>{a.label}</div>
+            <div style={{fontSize:12,color:"var(--text3)",marginTop:3}}>{a.sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent activity + top performers */}
+      <div className="grid g2">
+        <div className="card">
+          <h3 style={{fontSize:15,marginBottom:14}}>📈 Learning Path</h3>
+          {["beginner","intermediate","advanced"].map((lvl,i)=>{
+            const colors = ["var(--accent3)","var(--accent)","var(--accent2)"];
+            const pct = i===0 ? Math.min(user.casesCompleted*20,100) : i===1 ? Math.min(Math.max(user.casesCompleted-2,0)*25,100) : 0;
+            return (
+              <div key={lvl} style={{marginBottom:14}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+                  <span style={{fontSize:13,textTransform:"capitalize",fontWeight:500}}>{lvl}</span>
+                  <span style={{fontSize:12,color:"var(--text3)"}}>{pct}%</span>
+                </div>
+                <div className="progress-bar"><div className="progress-fill" style={{width:`${pct}%`,background:colors[i]}}/></div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="card">
+          <h3 style={{fontSize:15,marginBottom:14}}>🏆 Top Performers</h3>
+          {LEADERBOARD_DATA.slice(0,5).map((u,i)=>(
+            <div key={u.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
+              <span style={{fontSize:14,fontWeight:800,width:20,color:"var(--text3)"}}>{i+1}</span>
+              <div style={{width:28,height:28,borderRadius:"50%",background:u.color+"22",color:u.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700}}>{u.avatar}</div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:600}}>{u.name}</div>
+                <div style={{fontSize:11,color:"var(--text3)"}}>Lv.{u.level}</div>
+              </div>
+              <span style={{fontSize:13,fontWeight:700,color:"var(--accent)"}}>{u.score.toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ==================== SIMULATION ==================== */
+function Simulation({ user, updateUser }) {
+  const [view, setView] = useState("list"); // list | sim
+  const [currentCase, setCurrentCase] = useState(null);
+  const [phase, setPhase] = useState("intro"); // intro | diagnosis | treatment | outcome
+  const [diagSel, setDiagSel] = useState(null);
+  const [txSel, setTxSel] = useState(null);
+  const [showResult, setShowResult] = useState(false);
+  const [role, setRole] = useState(null);
+
+  function startCase(c) {
+    setCurrentCase(c); setPhase("roleSelect"); setDiagSel(null); setTxSel(null); setShowResult(false); setView("sim");
+  }
+
+  function submitDiag() {
+    if (!diagSel) return;
+    setPhase("treatment");
+  }
+
+  function submitTx() {
+    if (!txSel) return;
+    const diagCorrect = currentCase.diagnosisOptions.find(d=>d.id===diagSel)?.correct||false;
+    const txCorrect = currentCase.treatmentOptions.find(t=>t.id===txSel)?.correct||false;
+    const pts = (diagCorrect?currentCase.points*0.5:0) + (txCorrect?currentCase.points*0.5:0);
+    setShowResult(true);
+    updateUser({
+      score: user.score + pts,
+      xp: user.xp + pts * 0.5,
+      casesCompleted: user.casesCompleted + 1,
+      totalAnswers: user.totalAnswers + 2,
+      correctAnswers: user.correctAnswers + (diagCorrect?1:0) + (txCorrect?1:0)
+    });
+    notify(`Case completed! +${Math.round(pts)} pts`, "success");
+    setPhase("outcome");
+  }
+
+  function diffColor(d) {
+    return d==="beginner"?"var(--success)":d==="intermediate"?"var(--warn)":"var(--danger)";
+  }
+
+  if (view==="list") return (
+    <div className="page-content fade-in">
+      <div style={{marginBottom:20}}>
+        <h2 style={{fontSize:22,fontWeight:800}}>🏥 Clinical Simulation</h2>
+        <p style={{color:"var(--text2)",marginTop:4}}>Solve real patient cases with role-based assignments</p>
+      </div>
+      <div className="grid" style={{gap:16}}>
+        {MOCK_CASES.map(c=>(
+          <div key={c.id} className="card" style={{cursor:"pointer",transition:"all .15s"}}
+               onMouseEnter={e=>e.currentTarget.style.borderColor="var(--accent)"}
+               onMouseLeave={e=>e.currentTarget.style.borderColor="var(--border)"}>
+            <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}}>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                  <span className="badge badge-purple">{c.specialty}</span>
+                  <span className="badge" style={{background:diffColor(c.difficulty)+"22",color:diffColor(c.difficulty),textTransform:"capitalize"}}>{c.difficulty}</span>
+                </div>
+                <h3 style={{fontSize:16,fontWeight:700,marginBottom:6}}>{c.title}</h3>
+                <p style={{fontSize:13,color:"var(--text2)",lineHeight:1.5}}>{c.presentation.slice(0,120)}…</p>
+              </div>
+              <div style={{textAlign:"right",flexShrink:0}}>
+                <div style={{fontSize:20,fontWeight:800,color:"var(--accent)",fontFamily:"'Syne',sans-serif"}}>{c.points}</div>
+                <div style={{fontSize:11,color:"var(--text3)"}}>points</div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:6,marginTop:12,flexWrap:"wrap"}}>
+              {c.symptoms.slice(0,3).map(s=><span key={s} style={{fontSize:11,padding:"2px 7px",background:"var(--bg3)",border:"1px solid var(--border)",borderRadius:4,color:"var(--text2)"}}>{s}</span>)}
+              {c.symptoms.length>3 && <span style={{fontSize:11,color:"var(--text3)"}}>+{c.symptoms.length-3} more</span>}
+            </div>
+            <button className="btn btn-primary btn-sm" style={{marginTop:14}} onClick={()=>startCase(c)}>
+              Start Case →
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  // Role select
+  if (phase==="roleSelect") return (
+    <div className="page-content fade-in">
+      <button className="btn btn-outline btn-sm" style={{marginBottom:16}} onClick={()=>{setView("list");setPhase("intro");}}>← Back to Cases</button>
+      <h2 style={{fontSize:20,fontWeight:800,marginBottom:6}}>{currentCase.title}</h2>
+      <p style={{color:"var(--text2)",fontSize:14,marginBottom:20}}>Select your role for this simulation</p>
+      <div className="grid g4" style={{marginBottom:20}}>
+        {ROLES.map(r=>(
+          <div key={r.id} className="card" style={{cursor:"pointer",borderColor:role===r.id?r.color:"var(--border)",transition:"all .15s",textAlign:"center"}}
+               onClick={()=>setRole(r.id)}>
+            <div style={{fontSize:32,marginBottom:8}}>{r.icon}</div>
+            <div style={{fontWeight:700,fontSize:14,color:role===r.id?r.color:"var(--text)"}}>{r.label}</div>
+            <div style={{fontSize:12,color:"var(--text3)",marginTop:4}}>{r.desc}</div>
+            <div style={{fontSize:11,color:r.color,marginTop:6,fontWeight:600}}>{r.perk}</div>
+          </div>
+        ))}
+      </div>
+      <button className="btn btn-primary" disabled={!role} onClick={()=>setPhase("intro")}>Begin Simulation →</button>
+    </div>
+  );
+
+  // Case intro
+  if (phase==="intro") return (
+    <div className="page-content fade-in">
+      <button className="btn btn-outline btn-sm" style={{marginBottom:16}} onClick={()=>setPhase("roleSelect")}>← Change Role</button>
+      <div className="card sim-patient" style={{marginBottom:16}}>
+        <div style={{display:"flex",gap:12,alignItems:"flex-start",marginBottom:16}}>
+          <span style={{fontSize:32}}>🧑‍⚕️</span>
+          <div>
+            <h3 style={{fontSize:18,fontWeight:800}}>{currentCase.title}</h3>
+            <span className="badge badge-purple" style={{marginTop:4}}>{currentCase.specialty}</span>
+          </div>
+        </div>
+        <p style={{fontSize:14,lineHeight:1.7,color:"var(--text)"}}>{currentCase.presentation}</p>
+        <hr className="divider"/>
+        <div className="grid g2">
+          <div>
+            <div style={{fontSize:12,fontWeight:700,color:"var(--text3)",marginBottom:8,textTransform:"uppercase",letterSpacing:".05em"}}>Vitals</div>
+            {Object.entries(currentCase.vitals).map(([k,v])=>(
+              <div key={k} style={{display:"flex",justifyContent:"space-between",fontSize:13,padding:"5px 0",borderBottom:"1px solid var(--border)"}}>
+                <span style={{color:"var(--text3)",textTransform:"uppercase",fontSize:11,fontWeight:600}}>{k}</span>
+                <span style={{fontWeight:600}}>{v}</span>
+              </div>
+            ))}
+          </div>
+          <div>
+            <div style={{fontSize:12,fontWeight:700,color:"var(--text3)",marginBottom:8,textTransform:"uppercase",letterSpacing:".05em"}}>Key Symptoms</div>
+            {currentCase.symptoms.map(s=>(
+              <div key={s} style={{fontSize:13,padding:"5px 0",borderBottom:"1px solid var(--border)",color:"var(--danger)"}}>⚠ {s}</div>
+            ))}
+          </div>
+        </div>
+        {currentCase.history && <><hr className="divider"/><div style={{fontSize:13,color:"var(--text2)"}}><strong style={{color:"var(--text)"}}>History:</strong> {currentCase.history}</div></>}
+      </div>
+      <div className="card" style={{marginBottom:16}}>
+        <div style={{fontSize:12,color:"var(--text3)",fontWeight:700,marginBottom:8,textTransform:"uppercase"}}>Recommended Investigations</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {currentCase.investigations.map(inv=><span key={inv} className="badge badge-blue">{inv}</span>)}
+        </div>
+      </div>
+      <button className="btn btn-primary btn-lg" onClick={()=>setPhase("diagnosis")}>
+        🔍 Proceed to Diagnosis
+      </button>
+    </div>
+  );
+
+  // Diagnosis
+  if (phase==="diagnosis") return (
+    <div className="page-content fade-in">
+      <div className="card" style={{marginBottom:20}}>
+        <div style={{fontSize:12,color:"var(--text3)",marginBottom:4}}>Case: {currentCase.title}</div>
+        <h3 style={{fontSize:18,fontWeight:800}}>What is your diagnosis?</h3>
+        <p style={{color:"var(--text2)",fontSize:13,marginTop:4}}>Select the most likely diagnosis based on the clinical presentation</p>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
+        {currentCase.diagnosisOptions.map(d=>(
+          <div key={d.id} className={`choice-opt ${diagSel===d.id?"selected":""}`} onClick={()=>setDiagSel(d.id)}>
+            <span style={{fontWeight:700,color:"var(--text3)",minWidth:18}}>{d.id.toUpperCase()}.</span>
+            <span>{d.text}</span>
+          </div>
+        ))}
+      </div>
+      <button className="btn btn-primary" disabled={!diagSel} onClick={submitDiag}>Confirm Diagnosis →</button>
+    </div>
+  );
+
+  // Treatment
+  if (phase==="treatment") return (
+    <div className="page-content fade-in">
+      <div className="card" style={{marginBottom:20}}>
+        <h3 style={{fontSize:18,fontWeight:800}}>Select Treatment Plan</h3>
+        <p style={{color:"var(--text2)",fontSize:13,marginTop:4}}>Choose the most appropriate management for this patient</p>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:20}}>
+        {currentCase.treatmentOptions.map(t=>(
+          <div key={t.id} className={`choice-opt ${txSel===t.id?"selected":""}`} onClick={()=>setTxSel(t.id)}>
+            <span style={{fontWeight:700,color:"var(--text3)",minWidth:18}}>{t.id.toUpperCase()}.</span>
+            <span>{t.text}</span>
+          </div>
+        ))}
+      </div>
+      <button className="btn btn-primary" disabled={!txSel} onClick={submitTx}>Submit Treatment →</button>
+    </div>
+  );
+
+  // Outcome
+  if (phase==="outcome") {
+    const diagCorrect = currentCase.diagnosisOptions.find(d=>d.id===diagSel)?.correct||false;
+    const txCorrect = currentCase.treatmentOptions.find(t=>t.id===txSel)?.correct||false;
+    const pts = (diagCorrect?currentCase.points*0.5:0)+(txCorrect?currentCase.points*0.5:0);
+    return (
+      <div className="page-content fade-in">
+        <div className="card" style={{marginBottom:16,borderColor:diagCorrect&&txCorrect?"var(--success)":"var(--warn)"}}>
+          <div style={{textAlign:"center",padding:"20px 0"}}>
+            <div style={{fontSize:48,marginBottom:8}}>{diagCorrect&&txCorrect?"🎉":diagCorrect||txCorrect?"👍":"😕"}</div>
+            <h3 style={{fontSize:22,fontWeight:800}}>{diagCorrect&&txCorrect?"Excellent!":diagCorrect||txCorrect?"Good Effort":"Keep Practicing"}</h3>
+            <div style={{fontSize:28,fontWeight:800,color:"var(--accent)",margin:"12px 0",fontFamily:"'Syne',sans-serif"}}>+{Math.round(pts)} pts</div>
+          </div>
+          <div className="grid g2" style={{marginTop:16}}>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontSize:11,color:"var(--text3)",marginBottom:4}}>DIAGNOSIS</div>
+              <div style={{fontSize:14,fontWeight:700,color:diagCorrect?"var(--success)":"var(--danger)"}}>{diagCorrect?"✓ Correct":"✗ Incorrect"}</div>
+            </div>
+            <div style={{textAlign:"center"}}>
+              <div style={{fontSize:11,color:"var(--text3)",marginBottom:4}}>TREATMENT</div>
+              <div style={{fontSize:14,fontWeight:700,color:txCorrect?"var(--success)":"var(--danger)"}}>{txCorrect?"✓ Correct":"✗ Incorrect"}</div>
+            </div>
+          </div>
+        </div>
+        <div className="card" style={{marginBottom:16,borderLeft:"3px solid var(--accent)"}}>
+          <div style={{fontSize:12,color:"var(--text3)",marginBottom:6,fontWeight:700}}>CLINICAL OUTCOME</div>
+          <p style={{fontSize:14,lineHeight:1.6}}>{currentCase.outcome}</p>
+        </div>
+        <div className="card" style={{marginBottom:16,borderLeft:"3px solid var(--accent2)"}}>
+          <div style={{fontSize:12,color:"var(--text3)",marginBottom:6,fontWeight:700}}>LEARNING POINTS</div>
+          <p style={{fontSize:14,lineHeight:1.6}}>{currentCase.learning}</p>
+        </div>
+        <div style={{display:"flex",gap:10}}>
+          <button className="btn btn-primary" onClick={()=>{setView("list");setPhase("intro");}}>← More Cases</button>
+          <button className="btn btn-outline" onClick={()=>{startCase(currentCase);}}>Retry Case</button>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+}
+
+/* ==================== QUIZ ==================== */
+function Quiz({ user, updateUser }) {
+  const [mode, setMode] = useState("select"); // select | quiz | result
+  const [difficulty, setDifficulty] = useState(user.preQuizLevel||"beginner");
+  const [questions, setQuestions] = useState([]);
+  const [step, setStep] = useState(0);
+  const [selected, setSelected] = useState(null);
+  const [revealed, setRevealed] = useState(false);
+  const [results, setResults] = useState([]);
+
+  function startQuiz() {
+    const pool = QUIZ_QUESTIONS.filter(q=>q.difficulty===difficulty||difficulty==="all");
+    const shuffled = [...pool].sort(()=>Math.random()-.5).slice(0,Math.min(pool.length,7));
+    setQuestions(shuffled); setStep(0); setSelected(null); setRevealed(false); setResults([]); setMode("quiz");
+  }
+
+  function reveal() {
+    if (selected===null) return;
+    setRevealed(true);
+  }
+
+  function next() {
+    const correct = selected === questions[step].ans;
+    const newResults = [...results, { q: questions[step], selected, correct }];
+    if (step < questions.length-1) {
+      setResults(newResults); setSelected(null); setRevealed(false); setStep(s=>s+1);
+    } else {
+      setResults(newResults);
+      const score = newResults.filter(r=>r.correct).length;
+      const pct = Math.round(score/questions.length*100);
+      const pts = score * 50;
+      updateUser({
+        score: user.score + pts,
+        xp: user.xp + pts * 0.3,
+        quizScores: [...(user.quizScores||[]), { score:pct, difficulty, date:new Date().toLocaleDateString() }],
+        totalAnswers: user.totalAnswers + questions.length,
+        correctAnswers: user.correctAnswers + score
+      });
+      if (pct < 40) notify("Consider mentorship — you scored below 40%", "warn");
+      else if (pct === 100) notify("Perfect score! 🎉", "success");
+      setMode("result");
+    }
+  }
+
+  if (mode==="select") return (
+    <div className="page-content fade-in">
+      <h2 style={{fontSize:22,fontWeight:800,marginBottom:6}}>🧠 Adaptive Quiz</h2>
+      <p style={{color:"var(--text2)",marginBottom:20}}>Test your medical knowledge — difficulty adapts to your level</p>
+      <div className="grid g3" style={{marginBottom:20}}>
+        {["beginner","intermediate","advanced"].map(d=>{
+          const colors={beginner:"var(--success)",intermediate:"var(--warn)",advanced:"var(--danger)"};
+          return (
+            <div key={d} className="card" style={{cursor:"pointer",borderColor:difficulty===d?colors[d]:"var(--border)",transition:"all .15s"}} onClick={()=>setDifficulty(d)}>
+              <div style={{fontSize:24,marginBottom:8}}>{d==="beginner"?"🌱":d==="intermediate"?"🔥":"⚡"}</div>
+              <div style={{fontWeight:700,textTransform:"capitalize",color:difficulty===d?colors[d]:"var(--text)"}}>{d}</div>
+              <div style={{fontSize:12,color:"var(--text3)",marginTop:4}}>
+                {QUIZ_QUESTIONS.filter(q=>q.difficulty===d).length} questions
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {user.quizScores?.length > 0 && (
+        <div className="card" style={{marginBottom:20}}>
+          <div style={{fontSize:14,fontWeight:700,marginBottom:12}}>Recent Quiz History</div>
+          {user.quizScores.slice(-5).reverse().map((s,i)=>(
+            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid var(--border)"}}>
+              <span style={{fontSize:13,textTransform:"capitalize"}}>{s.difficulty}</span>
+              <span style={{fontSize:12,color:"var(--text3)"}}>{s.date}</span>
+              <span style={{fontWeight:700,color:s.score>=70?"var(--success)":s.score>=40?"var(--warn)":"var(--danger)"}}>{s.score}%</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <button className="btn btn-primary btn-lg" onClick={startQuiz}>Start Quiz →</button>
+    </div>
+  );
+
+  if (mode==="quiz") {
+    const q = questions[step];
+    return (
+      <div className="page-content fade-in">
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <span style={{fontSize:13,color:"var(--text3)"}}>Question {step+1}/{questions.length}</span>
+          <span className="badge badge-purple" style={{textTransform:"capitalize"}}>{difficulty}</span>
+        </div>
+        <div style={{background:"var(--bg3)",borderRadius:4,height:5,marginBottom:20,overflow:"hidden"}}>
+          <div style={{height:"100%",background:"var(--accent2)",width:`${(step/questions.length)*100}%`,transition:"width .4s"}}/>
+        </div>
+        <div className="card" style={{marginBottom:16}}>
+          <p style={{fontSize:16,fontWeight:600,lineHeight:1.5}}>{q.q}</p>
+        </div>
+        {q.opts.map((opt,i)=>{
+          let cls = "quiz-opt";
+          if (revealed) {
+            if (i===q.ans) cls+=" correct";
+            else if (i===selected) cls+=" wrong";
+          } else if (i===selected) cls+=" selected";
+          return (
+            <div key={i} className={cls+(revealed?" disabled":"")} onClick={()=>!revealed&&setSelected(i)}>
+              <span style={{marginRight:8,fontWeight:700,color:"var(--text3)"}}>{String.fromCharCode(65+i)}.</span>{opt}
+            </div>
+          );
+        })}
+        {revealed && (
+          <div className="card" style={{marginTop:12,borderLeft:"3px solid var(--accent2)",background:"rgba(129,140,248,0.05)"}}>
+            <div style={{fontSize:12,color:"var(--text3)",marginBottom:4,fontWeight:700}}>EXPLANATION</div>
+            <p style={{fontSize:13,lineHeight:1.6}}>{q.exp}</p>
+          </div>
+        )}
+        <div style={{display:"flex",gap:10,marginTop:16}}>
+          {!revealed
+            ? <button className="btn btn-outline" disabled={selected===null} onClick={reveal}>Check Answer</button>
+            : <button className="btn btn-primary" onClick={next}>{step<questions.length-1?"Next →":"See Results →"}</button>
+          }
+        </div>
+      </div>
+    );
+  }
+
+  if (mode==="result") {
+    const correct = results.filter(r=>r.correct).length;
+    const pct = Math.round(correct/results.length*100);
+    return (
+      <div className="page-content fade-in">
+        <div className="card" style={{textAlign:"center",padding:28,marginBottom:20,borderColor:pct>=70?"var(--success)":pct>=40?"var(--warn)":"var(--danger)"}}>
+          <div style={{fontSize:48,marginBottom:10}}>{pct>=70?"🎯":pct>=40?"📚":"💡"}</div>
+          <h2 style={{fontSize:26,fontWeight:800}}>{pct}%</h2>
+          <p style={{color:"var(--text2)",marginTop:6}}>{correct} / {results.length} correct</p>
+          <div style={{fontSize:14,marginTop:10,color:pct>=70?"var(--success)":pct>=40?"var(--warn)":"var(--danger)",fontWeight:600}}>
+            {pct>=70?"Excellent performance!":pct>=40?"Good effort, keep going!":"More practice recommended"}
+          </div>
+          {pct < 40 && (
+            <div style={{marginTop:16,padding:12,background:"rgba(251,146,60,0.1)",border:"1px solid var(--accent5)",borderRadius:8,fontSize:13}}>
+              💡 We recommend connecting with a mentor to strengthen your foundation.
+            </div>
+          )}
+        </div>
+        <div className="card" style={{marginBottom:20}}>
+          <div style={{fontSize:14,fontWeight:700,marginBottom:12}}>Review Answers</div>
+          {results.map((r,i)=>(
+            <div key={i} style={{marginBottom:12,padding:10,background:"var(--bg3)",borderRadius:8,borderLeft:`3px solid ${r.correct?"var(--success)":"var(--danger)"}`}}>
+              <div style={{fontSize:13,fontWeight:600,marginBottom:4}}>{r.q.q}</div>
+              <div style={{fontSize:12,color:r.correct?"var(--success)":"var(--danger)"}}>
+                {r.correct?"✓ Correct":"✗ Incorrect"} — Correct: {r.q.opts[r.q.ans]}
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:10}}>
+          <button className="btn btn-primary" onClick={()=>setMode("select")}>← Quiz Menu</button>
+          <button className="btn btn-outline" onClick={startQuiz}>Retry</button>
+        </div>
+      </div>
+    );
+  }
+}
+
+/* ==================== MULTIPLAYER ==================== */
+function Multiplayer({ user }) {
+  const [view, setView] = useState("lobby"); // lobby | room
+  const [rooms, setRooms] = useState([
+    { id:"R001", name:"Cardiology Ward", host:"Dr. Priya Sharma", members:3, max:5, status:"active", case:"Chest Pain — 58M" },
+    { id:"R002", name:"Peds Emergency", host:"Aisha Nair", members:2, max:4, status:"active", case:"Fever + Rash — 8F" },
+    { id:"R003", name:"ICU Round", host:"Dr. Vikram Rao", members:4, max:4, status:"full", case:"Confusion + Polyuria — 45M" }
+  ]);
+  const [currentRoom, setCurrentRoom] = useState(null);
+  const [messages, setMessages] = useState([
+    { from:"System", text:"Room created. Waiting for team members…", ts:"10:00" },
+    { from:"Dr. Priya Sharma", text:"Welcome! I'm the attending. Let's start with the vitals.", ts:"10:01", role:"Doctor" },
+    { from:"Aisha Nair", text:"Patient BP is critically elevated. Should we do ECG stat?", ts:"10:01", role:"Intern" }
+  ]);
+  const [newMsg, setNewMsg] = useState("");
+  const [roomName, setRoomName] = useState("");
+  const [showCreate, setShowCreate] = useState(false);
+  const chatRef = useRef(null);
+
+  function joinRoom(r) {
+    if (r.status==="full") { notify("Room is full!", "error"); return; }
+    setCurrentRoom(r);
+    setMessages(prev=>[...prev,{from:"System",text:`${user.name} joined the room.`,ts:new Date().toLocaleTimeString("en",{hour:"2-digit",minute:"2-digit"})}]);
+    setView("room");
+  }
+
+  function sendMsg() {
+    if (!newMsg.trim()) return;
+    setMessages(prev=>[...prev,{from:user.name,text:newMsg,ts:new Date().toLocaleTimeString("en",{hour:"2-digit",minute:"2-digit"}),self:true,role:user.role}]);
+    setNewMsg("");
+    setTimeout(()=>{
+      const bots=["Dr. Priya Sharma","Aisha Nair","System"];
+      const botReplies=["Good point! Let's verify with labs.","Agreed. I'll order the investigation now.","The patient's condition is stable for now.","Interesting presentation. Could be multiple differentials.","Let's review the ECG together."];
+      setMessages(prev=>[...prev,{from:bots[Math.floor(Math.random()*bots.length)],text:botReplies[Math.floor(Math.random()*botReplies.length)],ts:new Date().toLocaleTimeString("en",{hour:"2-digit",minute:"2-digit"})}]);
+      if(chatRef.current) chatRef.current.scrollTop=chatRef.current.scrollHeight;
+    },1200);
+    if(chatRef.current) chatRef.current.scrollTop=chatRef.current.scrollHeight;
+  }
+
+  function createRoom() {
+    if(!roomName.trim()) return;
+    const r={id:`R${Date.now()}`,name:roomName,host:user.name,members:1,max:5,status:"active",case:MOCK_CASES[0].title};
+    setRooms(prev=>[r,...prev]);
+    setShowCreate(false); setRoomName("");
+    joinRoom(r);
+    notify("Room created!", "success");
+  }
+
+  if (view==="room") return (
+    <div className="page-content fade-in" style={{maxHeight:"calc(100vh - 60px)",display:"flex",flexDirection:"column"}}>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:16}}>
+        <button className="btn btn-outline btn-sm" onClick={()=>setView("lobby")}>← Leave Room</button>
+        <div>
+          <h3 style={{fontSize:16,fontWeight:700}}>{currentRoom.name}</h3>
+          <div style={{fontSize:12,color:"var(--text3)"}}>Case: {currentRoom.case}</div>
+        </div>
+        <div style={{marginLeft:"auto",display:"flex",gap:6,alignItems:"center"}}>
+          <span style={{width:8,height:8,background:"var(--success)",borderRadius:"50%",display:"inline-block"}}/>
+          <span style={{fontSize:12,color:"var(--text2)"}}>{currentRoom.members} online</span>
+        </div>
+      </div>
+
+      {/* Role tags */}
+      <div style={{display:"flex",gap:6,marginBottom:12,flexWrap:"wrap"}}>
+        {ROLES.map(r=><span key={r.id} className="badge" style={{background:r.color+"22",color:r.color}}>{r.icon} {r.label}</span>)}
+      </div>
+
+      {/* Chat */}
+      <div ref={chatRef} style={{flex:1,overflowY:"auto",background:"var(--bg3)",borderRadius:10,padding:14,marginBottom:12,minHeight:280,maxHeight:380}}>
+        {messages.map((m,i)=>(
+          <div key={i} className="chat-msg" style={{textAlign:m.self?"right":"left"}}>
+            {!m.self&&<div style={{fontSize:11,color:"var(--text3)",marginBottom:2}}>{m.from}{m.role?` · ${m.role}`:""} {m.ts}</div>}
+            <div className={`chat-bubble ${m.self?"me":"them"}`} style={m.from==="System"?{background:"transparent",color:"var(--text3)",fontStyle:"italic",fontSize:12}:{}}>
+              {m.text}
+            </div>
+            {m.self&&<div style={{fontSize:11,color:"var(--text3)",marginTop:2}}>{m.ts}</div>}
+          </div>
+        ))}
+      </div>
+
+      {/* Input */}
+      <div style={{display:"flex",gap:8}}>
+        <input placeholder="Type your clinical observation…" value={newMsg} onChange={e=>setNewMsg(e.target.value)}
+               onKeyDown={e=>e.key==="Enter"&&sendMsg()} style={{flex:1}} />
+        <button className="btn btn-primary" onClick={sendMsg}>Send</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="page-content fade-in">
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
+        <div>
+          <h2 style={{fontSize:22,fontWeight:800}}>👥 Multiplayer Sessions</h2>
+          <p style={{color:"var(--text2)",marginTop:4}}>Collaborate on clinical cases in real-time</p>
+        </div>
+        <button className="btn btn-primary btn-sm" onClick={()=>setShowCreate(true)}>+ Create Room</button>
+      </div>
+
+      {showCreate && (
+        <div className="card" style={{marginBottom:16,borderColor:"var(--accent)"}}>
+          <h4 style={{marginBottom:12}}>Create New Room</h4>
+          <div style={{display:"flex",gap:8}}>
+            <input placeholder="Room name (e.g. Neurology Ward)" value={roomName} onChange={e=>setRoomName(e.target.value)}
+                   onKeyDown={e=>e.key==="Enter"&&createRoom()} />
+            <button className="btn btn-primary btn-sm" onClick={createRoom}>Create</button>
+            <button className="btn btn-outline btn-sm" onClick={()=>setShowCreate(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {rooms.map(r=>(
+          <div key={r.id} className="card" style={{display:"flex",alignItems:"center",gap:14}}>
+            <div style={{width:42,height:42,borderRadius:10,background:"rgba(56,189,248,0.1)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0}}>🏥</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:15}}>{r.name}</div>
+              <div style={{fontSize:12,color:"var(--text3)",marginTop:2}}>Host: {r.host} · Case: {r.case}</div>
+            </div>
+            <div style={{textAlign:"right",flexShrink:0}}>
+              <div style={{fontSize:13,marginBottom:4}}>
+                <span style={{color:r.status==="full"?"var(--danger)":"var(--success)",fontWeight:600}}>{r.members}/{r.max}</span>
+                <span style={{color:"var(--text3)",fontSize:11}}> members</span>
+              </div>
+              <button className="btn btn-sm" style={{background:r.status==="full"?"var(--bg4)":"var(--accent)",color:r.status==="full"?"var(--text3)":"#0a0e1a",border:"none"}}
+                      onClick={()=>joinRoom(r)}>
+                {r.status==="full"?"Full":"Join →"}
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ==================== LEADERBOARD ==================== */
+function Leaderboard({ user }) {
+  const [filter, setFilter] = useState("all");
+  const data = filter==="all" ? LEADERBOARD_DATA : LEADERBOARD_DATA.filter(u=>u.role===filter);
+
+  return (
+    <div className="page-content fade-in">
+      <h2 style={{fontSize:22,fontWeight:800,marginBottom:6}}>🏆 Leaderboard</h2>
+      <p style={{color:"var(--text2)",marginBottom:20}}>Top performers this month</p>
+
+      {/* Top 3 */}
+      <div style={{display:"flex",justifyContent:"center",gap:16,marginBottom:24,alignItems:"flex-end"}}>
+        {[data[1],data[0],data[2]].map((u,idx)=>{
+          if(!u) return null;
+          const h=[88,108,76][idx];
+          const medals=["🥈","🥇","🥉"];
+          const pos=[2,1,3];
+          return (
+            <div key={u.id} style={{textAlign:"center",width:88}}>
+              <div style={{fontSize:20,marginBottom:4}}>{medals[idx]}</div>
+              <div style={{width:h/2,height:h/2,borderRadius:"50%",background:u.color+"33",border:`2px solid ${u.color}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,color:u.color,margin:"0 auto 8px"}}>{u.avatar}</div>
+              <div style={{fontSize:12,fontWeight:700,color:"var(--text)"}}>{u.name.split(" ")[0]}</div>
+              <div style={{fontSize:11,color:"var(--text3)"}}>{u.score.toLocaleString()}</div>
+              <div style={{height:h,background:u.color+"22",border:`1px solid ${u.color}44`,borderRadius:"8px 8px 0 0",marginTop:8}}/>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Filter */}
+      <div style={{display:"flex",gap:6,marginBottom:16,flexWrap:"wrap"}}>
+        {["all","student","intern","doctor","nurse","surgeon"].map(f=>(
+          <button key={f} onClick={()=>setFilter(f)}
+            style={{padding:"5px 12px",borderRadius:20,border:"1px solid",fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"'DM Sans',sans-serif",textTransform:"capitalize",transition:"all .15s",
+              background:filter===f?"var(--accent)":"transparent",
+              color:filter===f?"#0a0e1a":"var(--text2)",
+              borderColor:filter===f?"var(--accent)":"var(--border)"}}>
+            {f}
+          </button>
+        ))}
+      </div>
+
+      <div className="card" style={{padding:0,overflow:"hidden"}}>
+        {data.map((u,i)=>(
+          <div key={u.id} className="lb-row" style={{padding:"14px 16px",borderBottom:"1px solid var(--border)",display:"flex",alignItems:"center",gap:12,background:user.name===u.name?"rgba(56,189,248,0.05)":"transparent"}}>
+            <div className="lb-rank" style={{color:i<3?"var(--warn)":"var(--text3)"}}>{i+1}</div>
+            <div style={{width:36,height:36,borderRadius:"50%",background:u.color+"22",color:u.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700}}>{u.avatar}</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:600,fontSize:14,display:"flex",alignItems:"center",gap:6}}>
+                {u.name}
+                {user.name===u.name&&<span style={{fontSize:10,padding:"1px 5px",background:"var(--accent)",color:"#0a0e1a",borderRadius:3,fontWeight:700}}>YOU</span>}
+              </div>
+              <div style={{fontSize:12,color:"var(--text3)",textTransform:"capitalize"}}>{u.role} · Level {u.level}</div>
+            </div>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontWeight:700,color:"var(--accent)",fontFamily:"'Syne',sans-serif"}}>{u.score.toLocaleString()}</div>
+              <div style={{fontSize:11,color:"var(--text3)"}}>{u.accuracy}% accuracy</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ==================== PROFILE ==================== */
+function Profile({ user, updateUser, onLogout }) {
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ name: user.name, role: user.role });
+
+  function save() {
+    updateUser({ name: form.name, role: form.role });
+    setEditing(false);
+    notify("Profile updated!", "success");
+  }
+
+  const initials = user.name.split(" ").map(n=>n[0]).join("").slice(0,2).toUpperCase();
+  const accuracy = user.totalAnswers > 0 ? Math.round(user.correctAnswers/user.totalAnswers*100) : 0;
+
+  return (
+    <div className="page-content fade-in">
+      <h2 style={{fontSize:22,fontWeight:800,marginBottom:20}}>👤 Profile</h2>
+      <div className="grid g2">
+        <div>
+          <div className="card" style={{marginBottom:16}}>
+            <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:16}}>
+              <div style={{width:64,height:64,borderRadius:"50%",background:user.color+"33",color:user.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,fontWeight:800}}>{initials}</div>
+              <div>
+                <div style={{fontSize:18,fontWeight:800}}>{user.name}</div>
+                <div style={{fontSize:13,color:"var(--text3)",textTransform:"capitalize",marginTop:2}}>{user.role}</div>
+                <div style={{fontSize:12,color:"var(--text2)",marginTop:2}}>{user.email}</div>
+              </div>
+            </div>
+            {editing ? (
+              <>
+                <div className="form-group">
+                  <label>Name</label>
+                  <input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label>Role</label>
+                  <select value={form.role} onChange={e=>setForm({...form,role:e.target.value})}>
+                    <option value="student">Student</option>
+                    <option value="intern">Intern</option>
+                    <option value="doctor">Doctor</option>
+                    <option value="nurse">Nurse</option>
+                    <option value="mentor">Mentor</option>
+                  </select>
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button className="btn btn-primary btn-sm" onClick={save}>Save</button>
+                  <button className="btn btn-outline btn-sm" onClick={()=>setEditing(false)}>Cancel</button>
+                </div>
+              </>
+            ) : (
+              <button className="btn btn-outline btn-sm" onClick={()=>setEditing(true)}>Edit Profile</button>
+            )}
+          </div>
+
+          <div className="card" style={{marginBottom:16}}>
+            <div style={{fontSize:14,fontWeight:700,marginBottom:12}}>Performance Stats</div>
+            <div className="grid g2" style={{gap:10}}>
+              {[
+                { label:"Level", val:user.level, color:"var(--accent)" },
+                { label:"XP", val:user.xp, color:"var(--accent2)" },
+                { label:"Cases", val:user.casesCompleted, color:"var(--success)" },
+                { label:"Accuracy", val:`${accuracy}%`, color:"var(--accent5)" }
+              ].map(s=>(
+                <div key={s.label} style={{textAlign:"center",padding:12,background:"var(--bg3)",borderRadius:8}}>
+                  <div style={{fontSize:20,fontWeight:800,color:s.color,fontFamily:"'Syne',sans-serif"}}>{s.val}</div>
+                  <div style={{fontSize:11,color:"var(--text3)",marginTop:2}}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div>
+          <div className="card" style={{marginBottom:16}}>
+            <div style={{fontSize:14,fontWeight:700,marginBottom:12}}>Quiz History</div>
+            {user.quizScores?.length > 0
+              ? user.quizScores.slice(-8).reverse().map((s,i)=>(
+                  <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"8px 0",borderBottom:"1px solid var(--border)",fontSize:13}}>
+                    <span style={{textTransform:"capitalize",color:"var(--text2)"}}>{s.difficulty}</span>
+                    <span style={{color:"var(--text3)",fontSize:12}}>{s.date}</span>
+                    <span style={{fontWeight:700,color:s.score>=70?"var(--success)":s.score>=40?"var(--warn)":"var(--danger)"}}>{s.score}%</span>
+                  </div>
+                ))
+              : <p style={{color:"var(--text3)",fontSize:13}}>No quizzes taken yet. Start one!</p>
+            }
+          </div>
+          <div className="card" style={{marginBottom:16}}>
+            <div style={{fontSize:14,fontWeight:700,marginBottom:12}}>Difficulty Level</div>
+            <div style={{padding:12,background:"var(--bg3)",borderRadius:8,textAlign:"center"}}>
+              <div style={{fontSize:22,marginBottom:4}}>{user.preQuizLevel==="advanced"?"⚡":user.preQuizLevel==="intermediate"?"🔥":"🌱"}</div>
+              <div style={{fontWeight:700,textTransform:"capitalize",color:"var(--accent)"}}>{user.preQuizLevel||"Beginner"}</div>
+              <div style={{fontSize:11,color:"var(--text3)",marginTop:4}}>Assessed by Pre-Quiz</div>
+            </div>
+          </div>
+          <button className="btn btn-danger btn-sm btn-block" onClick={onLogout}>Sign Out</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ==================== MENTORSHIP ==================== */
+function Mentorship({ user }) {
+  const [applied, setApplied] = useState(false);
+  const mentors = [
+    { name:"Dr. Anita Desai", specialty:"Cardiology", exp:"12 years", rating:4.9, slots:"Mon, Wed", avatar:"AD", color:"#38bdf8" },
+    { name:"Prof. Rajesh Iyer", specialty:"Neurology", exp:"18 years", rating:4.8, slots:"Tue, Thu", avatar:"RI", color:"#818cf8" },
+    { name:"Dr. Kavya Menon", specialty:"Pediatrics", exp:"8 years", rating:4.7, slots:"Fri, Sat", avatar:"KM", color:"#34d399" }
+  ];
+
+  const lastQuiz = user.quizScores?.slice(-1)[0];
+  const needsMentorship = lastQuiz && lastQuiz.score < 40;
+
+  return (
+    <div className="page-content fade-in">
+      <h2 style={{fontSize:22,fontWeight:800,marginBottom:6}}>🎓 Mentorship</h2>
+      <p style={{color:"var(--text2)",marginBottom:20}}>Connect with expert mentors for guided learning</p>
+
+      {needsMentorship && (
+        <div className="card" style={{marginBottom:20,borderColor:"var(--accent5)",background:"rgba(251,146,60,0.05)"}}>
+          <div style={{display:"flex",gap:12,alignItems:"flex-start"}}>
+            <span style={{fontSize:24}}>⚠️</span>
+            <div>
+              <div style={{fontWeight:700,fontSize:15}}>Mentorship Recommended</div>
+              <p style={{fontSize:13,color:"var(--text2)",marginTop:4}}>Your recent quiz score was {lastQuiz.score}%. A mentor can help identify gaps in your knowledge and guide your learning.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="grid g3" style={{marginBottom:20}}>
+        {mentors.map(m=>(
+          <div key={m.name} className="card">
+            <div style={{textAlign:"center",marginBottom:14}}>
+              <div style={{width:52,height:52,borderRadius:"50%",background:m.color+"22",color:m.color,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,fontWeight:700,margin:"0 auto 10px"}}>{m.avatar}</div>
+              <div style={{fontWeight:700,fontSize:14}}>{m.name}</div>
+              <div style={{fontSize:12,color:"var(--text3)",marginTop:2}}>{m.specialty} · {m.exp}</div>
+              <div style={{marginTop:4,fontSize:12,color:"var(--warn)"}}>★ {m.rating}</div>
+            </div>
+            <div style={{fontSize:12,color:"var(--text2)",marginBottom:12}}>📅 Available: {m.slots}</div>
+            <button className="btn btn-outline btn-sm btn-block" onClick={()=>{setApplied(true);notify(`Request sent to ${m.name}!`,"success");}}>
+              Request Session
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {applied && (
+        <div className="card" style={{borderColor:"var(--success)"}}>
+          <div style={{fontSize:16}}>✅ <strong>Request Sent!</strong> Your mentor will contact you within 24 hours via your registered email.</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ==================== COUNSELLING ==================== */
+function Counselling({ user }) {
+  const [booked, setBooked] = useState(false);
+  const [form, setForm] = useState({ topic:"", date:"", time:"", notes:"" });
+
+  function book(e) {
+    e.preventDefault();
+    if (!form.topic || !form.date) return;
+    setBooked(true);
+    notify("Counselling session booked! 🎉", "success");
+  }
+
+  return (
+    <div className="page-content fade-in">
+      <h2 style={{fontSize:22,fontWeight:800,marginBottom:6}}>💬 Counselling</h2>
+      <p style={{color:"var(--text2)",marginBottom:20}}>Schedule a one-to-one counselling session</p>
+
+      {booked ? (
+        <div className="card" style={{textAlign:"center",padding:32,borderColor:"var(--success)"}}>
+          <div style={{fontSize:48,marginBottom:12}}>✅</div>
+          <h3 style={{fontSize:20,fontWeight:800}}>Session Booked!</h3>
+          <p style={{color:"var(--text2)",marginTop:8}}>Your counselling session for <strong>{form.topic}</strong> on <strong>{form.date}</strong> has been confirmed. A counsellor will reach out to you soon.</p>
+          <button className="btn btn-outline btn-sm" style={{marginTop:16}} onClick={()=>setBooked(false)}>Book Another</button>
+        </div>
+      ) : (
+        <div className="grid g2">
+          <div>
+            <div className="card">
+              <h3 style={{fontSize:15,fontWeight:700,marginBottom:16}}>Schedule Session</h3>
+              <form onSubmit={book}>
+                <div className="form-group">
+                  <label>Topic</label>
+                  <select value={form.topic} onChange={e=>setForm({...form,topic:e.target.value})}>
+                    <option value="">Select a topic…</option>
+                    <option>Career Guidance</option>
+                    <option>Academic Stress</option>
+                    <option>Exam Preparation</option>
+                    <option>Speciality Selection</option>
+                    <option>Work-Life Balance</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Preferred Date</label>
+                  <input type="date" value={form.date} onChange={e=>setForm({...form,date:e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label>Preferred Time</label>
+                  <select value={form.time} onChange={e=>setForm({...form,time:e.target.value})}>
+                    <option value="">Select time…</option>
+                    <option>09:00 AM</option><option>11:00 AM</option>
+                    <option>02:00 PM</option><option>04:00 PM</option><option>06:00 PM</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Notes (optional)</label>
+                  <textarea rows={3} placeholder="Describe your concern briefly…" value={form.notes} onChange={e=>setForm({...form,notes:e.target.value})}/>
+                </div>
+                <button className="btn btn-primary btn-block" type="submit">Book Session</button>
+              </form>
+            </div>
+          </div>
+          <div>
+            <div className="card" style={{marginBottom:12}}>
+              <h4 style={{fontSize:14,fontWeight:700,marginBottom:10}}>What We Offer</h4>
+              {["Career path advice","Exam stress management","Speciality selection help","Mental health support","Peer-to-peer sessions"].map(s=>(
+                <div key={s} style={{padding:"7px 0",borderBottom:"1px solid var(--border)",fontSize:13,color:"var(--text2)"}}>✦ {s}</div>
+              ))}
+            </div>
+            <div className="card" style={{background:"rgba(52,211,153,0.05)",borderColor:"var(--success)"}}>
+              <div style={{fontSize:13,fontWeight:700,color:"var(--success)",marginBottom:4}}>All sessions are confidential</div>
+              <p style={{fontSize:12,color:"var(--text2)"}}>Your sessions are private and only visible to you and your assigned counsellor.</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ==================== INSTITUTIONS ==================== */
+function Institutions() {
+  return (
+    <div className="page-content fade-in">
+      <h2 style={{fontSize:22,fontWeight:800,marginBottom:6}}>🏛️ Institutional Collaborations</h2>
+      <p style={{color:"var(--text2)",marginBottom:20}}>Partner institutions contributing cases and expertise</p>
+
+      <div className="grid g3" style={{marginBottom:24}}>
+        {INSTITUTIONS.map(inst=>(
+          <div key={inst.name} className="card">
+            <div style={{fontSize:32,marginBottom:10}}>{inst.badge}</div>
+            <div style={{fontWeight:700,fontSize:15}}>{inst.name}</div>
+            <div style={{fontSize:12,color:"var(--text3)",marginTop:2,marginBottom:10}}>{inst.type}</div>
+            <div style={{display:"flex",gap:12}}>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontWeight:700,color:"var(--accent)",fontFamily:"'Syne',sans-serif"}}>{inst.cases}</div>
+                <div style={{fontSize:11,color:"var(--text3)"}}>Cases</div>
+              </div>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontWeight:700,color:"var(--success)",fontFamily:"'Syne',sans-serif"}}>{inst.doctors}</div>
+                <div style={{fontSize:11,color:"var(--text3)"}}>Doctors</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="card" style={{borderColor:"var(--accent2)"}}>
+        <div style={{fontSize:15,fontWeight:700,marginBottom:8}}>🤝 Become a Partner Institution</div>
+        <p style={{fontSize:13,color:"var(--text2)",marginBottom:12}}>Join MedLearn's growing network of medical institutions. Contribute anonymised cases, collaborate with students, and help shape the future of medical education in India.</p>
+        <button className="btn btn-outline btn-sm" onClick={()=>notify("Partnership inquiry sent! We'll be in touch.", "success")}>
+          Express Interest
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ==================== NOTIFICATION COMPONENT ==================== */
+function NotifToast() {
+  const [notif, setNotif] = useState(null);
+  useEffect(() => { setGlobalNotif = setNotif; }, []);
+  useEffect(() => { if (notif) { const t = setTimeout(()=>setNotif(null), 3500); return ()=>clearTimeout(t); } }, [notif]);
+  if (!notif) return null;
+  const colors = { success:"var(--success)", error:"var(--danger)", warn:"var(--warn)", info:"var(--accent)" };
+  const icons = { success:"✓", error:"✕", warn:"⚠", info:"ℹ" };
+  return (
+    <div className="notif" style={{borderColor:colors[notif.type]||"var(--border2)"}}>
+      <span style={{color:colors[notif.type]||"var(--accent)",fontWeight:700,fontSize:14}}>{icons[notif.type||"info"]}</span>
+      <span style={{fontSize:13}}>{notif.msg}</span>
+    </div>
+  );
+}
+
+/* ==================== MAIN APP ==================== */
+function App() {
+  const [user, setUser] = useState(null);
+  const [page, setPage] = useState("dashboard");
+  const [showPreQuiz, setShowPreQuiz] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("ml_current");
+    if (saved) {
+      const u = JSON.parse(saved);
+      setUser(u);
+      if (!u.preQuizDone) setShowPreQuiz(true);
+    }
+  }, []);
+
+  function handleAuth(u) {
+    setUser(u);
+    if (!u.preQuizDone) setShowPreQuiz(true);
+  }
+
+  function handlePreQuiz(level, score) {
+    updateUser({ preQuizDone: true, preQuizLevel: level, xp: Math.round(score) });
+    setShowPreQuiz(false);
+    notify(`Level assessed: ${level.charAt(0).toUpperCase()+level.slice(1)}! 🎉`, "success");
+  }
+
+  function updateUser(delta) {
+    setUser(prev => {
+      const newLevel = Math.max(1, Math.min(10, Math.floor((prev.xp + (delta.xp||0)) / 500) + 1));
+      const updated = { ...prev, ...delta, level: delta.level || newLevel };
+      const users = JSON.parse(localStorage.getItem("ml_users") || "[]");
+      const idx = users.findIndex(u => u.id === updated.id);
+      if (idx >= 0) users[idx] = updated;
+      localStorage.setItem("ml_users", JSON.stringify(users));
+      localStorage.setItem("ml_current", JSON.stringify(updated));
+      return updated;
+    });
+  }
+
+  function logout() {
+    localStorage.removeItem("ml_current");
+    setUser(null); setShowPreQuiz(false); setPage("dashboard");
+  }
+
+  if (!user) return <><AuthPage onAuth={handleAuth}/><NotifToast/></>;
+  if (showPreQuiz) return <><PreQuiz onComplete={handlePreQuiz}/><NotifToast/></>;
+
+  const pages = {
+    dashboard: <Dashboard user={user} setPage={setPage}/>,
+    simulation: <Simulation user={user} updateUser={updateUser}/>,
+    quiz: <Quiz user={user} updateUser={updateUser}/>,
+    multiplayer: <Multiplayer user={user}/>,
+    leaderboard: <Leaderboard user={user}/>,
+    profile: <Profile user={user} updateUser={updateUser} onLogout={logout}/>,
+    mentorship: <Mentorship user={user}/>,
+    counselling: <Counselling user={user}/>,
+    institutions: <Institutions/>
+  };
+
+  return (
+    <div className="app-shell">
+      <Sidebar page={page} setPage={setPage} user={user} onLogout={logout}/>
+      <div className="main-content">
+        <div className="top-bar">
+          <div style={{fontSize:14,color:"var(--text2)"}}>
+            {page.charAt(0).toUpperCase()+page.slice(1)}
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <span className="badge badge-green">
+              <span style={{width:6,height:6,borderRadius:"50%",background:"var(--success)",display:"inline-block"}}/>
+              Online
+            </span>
+            <span style={{fontSize:13,color:"var(--text2)"}}>{user.name}</span>
+          </div>
+        </div>
+        {pages[page] || pages.dashboard}
+      </div>
+      <NotifToast/>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
