@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MedLearn — Gamified Medical Learning Platform</title>
+<title>MediQuest — Gamified Medical Learning Platform</title>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -560,7 +560,7 @@ function AuthPage({ onAuth }) {
       <div className="auth-card fade-in">
         <div style={{textAlign:"center",marginBottom:28}}>
           <div style={{width:56,height:56,borderRadius:16,background:"linear-gradient(135deg,#38bdf8,#818cf8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,margin:"0 auto 14px"}}>⚕️</div>
-          <h1 style={{fontSize:26,fontWeight:800,marginBottom:4}}>MedLearn</h1>
+          <h1 style={{fontSize:26,fontWeight:800,marginBottom:4}}>MediQuest</h1>
           <p style={{color:"var(--text3)",fontSize:13}}>Gamified Medical Learning Platform</p>
         </div>
 
@@ -690,7 +690,7 @@ function Sidebar({ page, setPage, user, onLogout }) {
       <div className="sidebar-logo">
         <div className="logo-icon">⚕️</div>
         <div>
-          <div className="logo-text">MedLearn</div>
+          <div className="logo-text">MediQuest</div>
           <div className="logo-sub">Clinical Platform</div>
         </div>
       </div>
@@ -1304,9 +1304,12 @@ function Multiplayer({ user }) {
   const [myRole, setMyRole] = React.useState('Doctor');
   const [showCreateModal, setShowCreateModal] = React.useState(false);
   const [newTeamName, setNewTeamName] = React.useState('');
+  const [joinCode, setJoinCode] = React.useState('');
+  const [createdCode, setCreatedCode] = React.useState('');
+  const [showCreatedModal, setShowCreatedModal] = React.useState(false);
   const [availableRooms, setAvailableRooms] = React.useState([
-    { id:'R101', name:'General OR 1', host:'Dr. Smith', members:2, max:4, case:'Appendectomy' },
-    { id:'R102', name:'Cardiac Suite', host:'Dr. Jones', members:1, max:4, case:'Valve Repair' }
+    { id:'MQ7A2B', name:'General OR 1', host:'Dr. Smith', members:2, max:4, case:'Appendectomy' },
+    { id:'MQ102X', name:'Cardiac Suite', host:'Dr. Jones', members:1, max:4, case:'Valve Repair' }
   ]);
   
   const canvasRef = React.useRef(null);
@@ -1422,10 +1425,31 @@ function Multiplayer({ user }) {
 
   function handleCreateTeam() {
     if(!newTeamName.trim()) return;
-    const id = 'R' + Date.now().toString().slice(-4);
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let id = "";
+    for (let i = 0; i < 6; i++) id += chars.charAt(Math.floor(Math.random() * chars.length));
+    
     setAvailableRooms(p => [{ id, name: newTeamName, host: user.name, members: 1, max: 4, case: 'Critical Trauma' }, ...p]);
-    setRoomId(id); setView('room'); setShowCreateModal(false); setNewTeamName('');
+    setCreatedCode(id);
+    setShowCreateModal(false);
+    setShowCreatedModal(true);
+    setNewTeamName('');
     notify('Team ' + newTeamName + ' created!', 'success');
+  }
+
+  function handleJoinByCode() {
+    if(!joinCode.trim()) return;
+    const room = availableRooms.find(r => r.id.toUpperCase() === joinCode.toUpperCase());
+    if(room) {
+      setRoomId(room.id);
+      setView('room');
+      setJoinCode('');
+    } else {
+      // For demo, if not found in list, just create a temporary one
+      setRoomId(joinCode.toUpperCase());
+      setView('room');
+      setJoinCode('');
+    }
   }
 
   function sendAction(action) {
@@ -1456,8 +1480,25 @@ function Multiplayer({ user }) {
             <h3 style={{marginBottom:15}}>Create New Team</h3>
             <input value={newTeamName} onChange={e=>setNewTeamName(e.target.value)} placeholder="Team Name..." style={{marginBottom:20}} autoFocus/>
             <div style={{display:'flex', gap:10}}>
-              <button className="btn btn-primary" style={{flex:1}} onClick={handleCreateTeam}>Create Team</button>
+              <button className="btn btn-primary" style={{flex:1}} onClick={handleCreateTeam}>Next →</button>
               <button className="btn btn-outline" style={{flex:1}} onClick={()=>setShowCreateModal(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCreatedModal && (
+        <div className="modal-overlay">
+          <div className="modal" style={{maxWidth:400, textAlign:'center'}}>
+            <div style={{fontSize:40, marginBottom:10}}>🎉</div>
+            <h3 style={{marginBottom:5}}>Team Created!</h3>
+            <p style={{color:'var(--text2)', fontSize:14, marginBottom:20}}>Share this code with your team:</p>
+            <div style={{background:'var(--bg)', padding:15, borderRadius:12, fontSize:24, fontWeight:800, color:'var(--accent)', letterSpacing:4, marginBottom:20, border:'2px dashed var(--accent)'}}>
+              {createdCode}
+            </div>
+            <div style={{display:'flex', gap:10}}>
+              <button className="btn btn-primary" style={{flex:1}} onClick={() => { setRoomId(createdCode); setView('room'); setShowCreatedModal(false); }}>Start Mission</button>
+              <button className="btn btn-outline" style={{flex:1}} onClick={() => { navigator.clipboard.writeText(createdCode); notify('Code copied to clipboard!','success'); }}>Copy Code</button>
             </div>
           </div>
         </div>
@@ -1472,6 +1513,26 @@ function Multiplayer({ user }) {
           {Object.keys(ROLE_ICONS).map(r => (
             <button key={r} className="btn btn-sm" style={{borderRadius:20, padding:'8px 20px', background:myRole===r?'var(--accent)':'rgba(255,255,255,0.05)', color:myRole===r?'#0a0e1a':'var(--text)', border:'1px solid var(--border)'}} onClick={() => setMyRole(r)}>{ROLE_ICONS[r]} {r}</button>
           ))}
+        </div>
+      </div>
+      
+      <div className="card" style={{marginBottom:24, background:'linear-gradient(135deg, rgba(56,189,248,0.05), transparent)', borderColor:'var(--accent2)'}}>
+        <div style={{display:'flex', gap:15, alignItems:'center'}}>
+          <div style={{fontSize:24}}>🔑</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14, fontWeight:700, marginBottom:2}}>JOIN BY TEAM CODE</div>
+            <div style={{fontSize:12, color:'var(--text3)'}}>Enter the 6-character code to join your team</div>
+          </div>
+          <div style={{display:'flex', gap:8}}>
+            <input 
+              value={joinCode} 
+              onChange={e=>setJoinCode(e.target.value.toUpperCase())} 
+              placeholder="MQ7A2B" 
+              style={{width:120, textAlign:'center', letterSpacing:2, fontWeight:800}}
+              maxLength={6}
+            />
+            <button className="btn btn-primary" onClick={handleJoinByCode}>JOIN</button>
+          </div>
         </div>
       </div>
       <div className="grid g2">
@@ -1499,7 +1560,10 @@ function Multiplayer({ user }) {
 
       {/* LEFT: LOGS */}
       <div className="card" style={{display:'flex', flexDirection:'column', overflow:'hidden', padding:0}}>
-        <div style={{padding:15, borderBottom:'1px solid var(--border)', fontSize:11, fontWeight:800, color:'var(--accent)', letterSpacing:1}}>📋 SUBJECT LOGS</div>
+        <div style={{padding:15, borderBottom:'1px solid var(--border)', fontSize:11, fontWeight:800, color:'var(--accent)', letterSpacing:1, display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+          <span>📋 SUBJECT LOGS</span>
+          <span className="badge badge-blue" style={{fontSize:9}}>{roomId}</span>
+        </div>
         <div style={{flex:1, overflowY:'auto', padding:12}}>
           {history.slice().reverse().map((h,i) => (
             <div key={i} style={{fontSize:11, padding:10, background:'var(--bg3)', borderRadius:8, marginBottom:8, borderLeft:'4px solid '+(h.classification==='DANGER'?'var(--danger)':'var(--success)')}}>

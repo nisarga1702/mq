@@ -1,5 +1,5 @@
 /**
- * MedLearn Platform — Backend API
+ * MediQuest Platform — Backend API
  * Node.js + Express + Socket.IO
  * 
  * Setup:
@@ -27,8 +27,8 @@ app.use(express.json());
 app.use(express.static(".")); // serve index.html
 
 const PORT = process.env.PORT || 3001;
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/medlearn";
-const JWT_SECRET = process.env.JWT_SECRET || "medlearn_secret_change_in_prod";
+const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/mediquest";
+const JWT_SECRET = process.env.JWT_SECRET || "mediquest_secret_change_in_prod";
 
 /* ===================== MODELS ===================== */
 
@@ -231,7 +231,13 @@ app.get("/api/rooms", async (req, res) => {
 // POST /api/rooms
 app.post("/api/rooms", authMiddleware, async (req, res) => {
   const { name, caseId } = req.body;
-  const roomId = `R${Date.now()}`;
+  const generateRoomCode = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let code = "";
+    for (let i = 0; i < 6; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+    return code;
+  };
+  const roomId = generateRoomCode();
   const room = await Room.create({
     roomId, name, host: req.user.email, caseId,
     members: [{ userId: req.user.id, name: req.user.name, role: "host" }]
@@ -338,8 +344,8 @@ io.on("connection", (socket) => {
 
 mongoose.connect(MONGO_URI).then(() => {
   console.log("✅ MongoDB connected");
-  server.listen(PORT, () => console.log(`🚀 MedLearn API running on http://localhost:${PORT}`));
+  server.listen(PORT, () => console.log(`🚀 MediQuest API running on http://localhost:${PORT}`));
 }).catch(err => {
   console.error("⚠ MongoDB not available, starting without DB for demo…");
-  server.listen(PORT, () => console.log(`🚀 MedLearn API running on http://localhost:${PORT} (no DB)`));
+  server.listen(PORT, () => console.log(`🚀 MediQuest API running on http://localhost:${PORT} (no DB)`));
 });
