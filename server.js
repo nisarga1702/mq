@@ -224,25 +224,58 @@ app.get("/api/sessions/me", authMiddleware, async (req, res) => {
 
 // GET /api/rooms
 app.get("/api/rooms", async (req, res) => {
-  const rooms = await Room.find({ status: { $ne: "ended" } }).select("-messages");
-  res.json(rooms);
+  try {
+    if (mongoose.connection.readyState === 1) {
+      const roomsDb = await Room.find({ status: { $ne: "ended" } }).select("-messages");
+      res.json(roomsDb);
+    } else {
+      // Fallback to in-memory rooms
+      const activeRooms = Object.keys(rooms).map(id => ({
+        roomId: id,
+        name: rooms[id].name || id,
+        host: rooms[id].host || "Unknown",
+        members: rooms[id].members,
+        maxMembers: rooms[id].maxMembers || 4,
+        status: "active"
+      }));
+      res.json(activeRooms);
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // POST /api/rooms
 app.post("/api/rooms", authMiddleware, async (req, res) => {
-  const { name, caseId } = req.body;
-  const generateRoomCode = () => {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let code = "";
-    for (let i = 0; i < 6; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
-    return code;
-  };
-  const roomId = generateRoomCode();
-  const room = await Room.create({
-    roomId, name, host: req.user.email, caseId,
-    members: [{ userId: req.user.id, name: req.user.name, role: "host" }]
-  });
-  res.json(room);
+  try {
+    const { name, caseId } = req.body;
+    const generateRoomCode = () => {
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let code = "";
+      for (let i = 0; i < 6; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+      return code;
+    };
+    const roomId = generateRoomCode();
+
+    if (mongoose.connection.readyState === 1) {
+      const room = await Room.create({
+        roomId, name, host: req.user.email, caseId,
+        members: [{ userId: req.user.id, name: req.user.name, role: "host" }]
+      });
+      res.json(room);
+    } else {
+      // Create in-memory
+      rooms[roomId] = { 
+        name, 
+        host: req.user.email, 
+        members: [{ socketId: null, userId: req.user.id, name: req.user.name, role: "host" }],
+        messages: [] 
+      };
+      res.json({ roomId, name, host: req.user.email });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 /* ===================== AI/ML PLACEHOLDER ROUTES ===================== */
@@ -295,10 +328,25 @@ io.on("connection", (socket) => {
 
   socket.on("join_room", ({ roomId, user }) => {
     socket.join(roomId);
-    if (!rooms[roomId]) rooms[roomId] = { members: [], messages: [] };
+    if (!rooms[roomId]) {
+        rooms[roomId] = { members: [], messages: [], name: roomId, host: user.name };
+    }
 
     const member = { socketId: socket.id, ...user };
-    rooms[roomId].members.push(member);
+    
+    // Check for role collision
+    const existingMemberWithRole = rooms[roomId].members.find(m => m.role === user.role && m.socketId !== socket.id);
+    if (existingMemberWithRole) {
+      socket.emit("role_collision", { role: user.role, existingPlayer: existingMemberWithRole.name });
+    }
+
+    // Update or add member
+    const existingMemberIndex = rooms[roomId].members.findIndex(m => m.socketId === socket.id);
+    if (existingMemberIndex > -1) {
+      rooms[roomId].members[existingMemberIndex] = member;
+    } else {
+      rooms[roomId].members.push(member);
+    }
 
     io.to(roomId).emit("room_update", {
       members: rooms[roomId].members,

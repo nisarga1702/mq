@@ -7,6 +7,10 @@
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.145.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.145.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.145.0/examples/js/loaders/OBJLoader.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1307,10 +1311,8 @@ function Multiplayer({ user }) {
   const [joinCode, setJoinCode] = React.useState('');
   const [createdCode, setCreatedCode] = React.useState('');
   const [showCreatedModal, setShowCreatedModal] = React.useState(false);
-  const [availableRooms, setAvailableRooms] = React.useState([
-    { id:'MQ7A2B', name:'General OR 1', host:'Dr. Smith', members:2, max:4, case:'Appendectomy' },
-    { id:'MQ102X', name:'Cardiac Suite', host:'Dr. Jones', members:1, max:4, case:'Valve Repair' }
-  ]);
+  const [availableRooms, setAvailableRooms] = React.useState([]);
+  const [roleCollision, setRoleCollision] = React.useState(null);
   
   const canvasRef = React.useRef(null);
   const socketRef = React.useRef(null);
@@ -1326,15 +1328,41 @@ function Multiplayer({ user }) {
     'Assistant Intern':[{ name:'IV Fluid', action:'iv' }, { name:'Gauze', action:'gauze' }, { name:'Retract', action:'retract' }, { name:'Clean', action:'clean' }]
   };
 
+  // ── Socket: connect ONCE on mount, never reconnect on state changes ──
   React.useEffect(() => {
-    const skt = window.io ? window.io('http://localhost:3001') : null;
-    if (!skt) return;
+    if (!window.io) { console.warn('Socket.IO not loaded'); return; }
+    const skt = window.io('http://localhost:3001', { transports: ['websocket', 'polling'] });
     socketRef.current = skt;
-    skt.emit('join_room', { roomId, user: { name: user.name, role: myRole } });
-    skt.on('room_update', d => { if(d.members) setPlayers(d.members); });
+
+    skt.on('room_update', d => { if (d.members) setPlayers(d.members); });
     skt.on('new_message', m => setChat(p => [...p, m]));
-    return () => skt.disconnect();
-  }, [roomId, myRole, view]);
+    skt.on('role_collision', d => setRoleCollision(d));
+    skt.on('connect', () => console.log('Socket connected:', skt.id));
+    skt.on('disconnect', () => console.log('Socket disconnected'));
+
+    return () => { skt.disconnect(); };
+  }, []); // empty deps — socket lives for the lifetime of the Multiplayer component
+
+  // ── Fetch active rooms periodically ──
+  React.useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const res = await fetch('http://localhost:3001/api/rooms');
+        const data = await res.json();
+        setAvailableRooms(data.map(r => ({
+          id: r.roomId,
+          name: r.name,
+          host: r.host,
+          members: r.members.length,
+          max: r.maxMembers || 4,
+          case: r.caseId === 5 ? 'Acute Appendicitis' : r.caseId === 1 ? 'Cardiac Emergency' : 'General Trauma'
+        })));
+      } catch (e) {}
+    };
+    fetchRooms();
+    const interval = setInterval(fetchRooms, 3000);
+    return () => clearInterval(interval);
+  }, []);
 
   function createHumanoid(color, isPatient = false) {
     const group = new THREE.Group();
@@ -1423,33 +1451,58 @@ function Multiplayer({ user }) {
     return () => { cancelAnimationFrame(raf); renderer.dispose(); if(el.contains(renderer.domElement)) el.removeChild(renderer.domElement); };
   }, [view, players, myRole, vitals.status]);
 
-  function handleCreateTeam() {
+  async function handleCreateTeam() {
     if(!newTeamName.trim()) return;
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let id = "";
-    for (let i = 0; i < 6; i++) id += chars.charAt(Math.floor(Math.random() * chars.length));
     
-    setAvailableRooms(p => [{ id, name: newTeamName, host: user.name, members: 1, max: 4, case: 'Critical Trauma' }, ...p]);
-    setCreatedCode(id);
-    setShowCreateModal(false);
-    setShowCreatedModal(true);
+    try {
+      const res = await fetch(`${window.location.origin}/api/rooms`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('ml_token')}` // Placeholder if needed, but local fallback used
+        },
+        body: JSON.stringify({ name: newTeamName, caseId: 5 })
+      });
+      const data = await res.json();
+      setCreatedCode(data.roomId);
+      setShowCreateModal(false);
+      setShowCreatedModal(true);
+    } catch (e) {
+      // Fallback if API fails
+      const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+      let id = "";
+      for (let i = 0; i < 6; i++) id += chars.charAt(Math.floor(Math.random() * chars.length));
+      setCreatedCode(id);
+      setShowCreateModal(false);
+      setShowCreatedModal(true);
+    }
     setNewTeamName('');
     notify('Team ' + newTeamName + ' created!', 'success');
   }
 
+  function enterRoom(id) {
+    setRoomId(id);
+    setPlayers([]);
+    // Emit join via the persistent socket
+    if (socketRef.current) {
+      socketRef.current.emit('join_room', { roomId: id, user: { name: user.name, role: myRole } });
+    }
+    setView('room');
+  }
+
   function handleJoinByCode() {
     if(!joinCode.trim()) return;
-    const room = availableRooms.find(r => r.id.toUpperCase() === joinCode.toUpperCase());
-    if(room) {
-      setRoomId(room.id);
-      setView('room');
-      setJoinCode('');
-    } else {
-      // For demo, if not found in list, just create a temporary one
-      setRoomId(joinCode.toUpperCase());
-      setView('room');
-      setJoinCode('');
+    const code = joinCode.toUpperCase().trim();
+    setJoinCode('');
+    enterRoom(code);
+  }
+
+  function leaveRoom() {
+    if (socketRef.current && roomId) {
+      socketRef.current.emit('leave_room', { roomId, user: { name: user.name } });
     }
+    setView('lobby');
+    setPlayers([]);
   }
 
   function sendAction(action) {
@@ -1468,12 +1521,42 @@ function Multiplayer({ user }) {
   function sendChat(e) {
     e.preventDefault(); if(!chatText.trim()) return;
     const msg = { from: user.name, text: chatText, ts: new Date().toLocaleTimeString() };
-    if(socketRef.current) socketRef.current.emit('send_message', { roomId, text: chatText });
+    if(socketRef.current) {
+      socketRef.current.emit('send_message', { roomId, message: { from: user.name, text: chatText } });
+    }
     setChat(p => [...p, msg]); setChatText('');
   }
 
   if (view === 'lobby') return (
     <div className="page-content fade-in">
+      {roleCollision && (
+        <div className="modal-overlay" style={{zIndex:2000}}>
+          <div className="modal" style={{maxWidth:400, textAlign:'center', borderColor:'var(--danger)'}}>
+            <div style={{fontSize:40, marginBottom:10}}>⚠️</div>
+            <h3 style={{marginBottom:10, color:'var(--danger)'}}>Role Already Taken</h3>
+            <p style={{color:'var(--text2)', fontSize:14, marginBottom:20}}>
+              <strong>{roleCollision.existingPlayer}</strong> is already acting as the <strong>{roleCollision.role}</strong>. 
+              Please choose a different role to coordinate effectively.
+            </p>
+            <div style={{display:'grid', gridTemplateColumns:'1fr', gap:10}}>
+              {Object.keys(ROLE_ICONS).filter(r => r !== roleCollision.role).map(r => (
+                <button key={r} className="btn btn-outline" onClick={() => {
+                  setMyRole(r);
+                  setRoleCollision(null);
+                  // Re-emit join_room with updated role
+                  if (socketRef.current && roomId) {
+                    socketRef.current.emit('join_room', { roomId, user: { name: user.name, role: r } });
+                  }
+                }}>
+                  Switch to {ROLE_ICONS[r]} {r}
+                </button>
+              ))}
+              <button className="btn btn-danger" style={{marginTop:10}} onClick={() => { leaveRoom(); setRoleCollision(null); }}>Leave Room</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showCreateModal && (
         <div className="modal-overlay">
           <div className="modal" style={{maxWidth:400}}>
@@ -1497,7 +1580,7 @@ function Multiplayer({ user }) {
               {createdCode}
             </div>
             <div style={{display:'flex', gap:10}}>
-              <button className="btn btn-primary" style={{flex:1}} onClick={() => { setRoomId(createdCode); setView('room'); setShowCreatedModal(false); }}>Start Mission</button>
+              <button className="btn btn-primary" style={{flex:1}} onClick={() => { enterRoom(createdCode); setShowCreatedModal(false); }}>Start Mission</button>
               <button className="btn btn-outline" style={{flex:1}} onClick={() => { navigator.clipboard.writeText(createdCode); notify('Code copied to clipboard!','success'); }}>Copy Code</button>
             </div>
           </div>
@@ -1537,7 +1620,7 @@ function Multiplayer({ user }) {
       </div>
       <div className="grid g2">
         {availableRooms.map(r => (
-          <div key={r.id} className="card" style={{borderColor:roomId===r.id?'var(--accent)':'var(--border)', transition:'all 0.2s', cursor:'pointer'}} onClick={() => { setRoomId(r.id); setView('room'); }}>
+          <div key={r.id} className="card" style={{borderColor:roomId===r.id?'var(--accent)':'var(--border)', transition:'all 0.2s', cursor:'pointer'}} onClick={() => enterRoom(r.id)}>
             <div style={{display:'flex', justifyContent:'space-between', marginBottom:10}}><span style={{fontWeight:800, fontSize:16}}>{r.name}</span><span className="badge badge-green">ACTIVE</span></div>
             <div style={{fontSize:13, color:'var(--text2)', marginBottom:12}}>📋 Case: {r.case} · {r.members}/{r.max} Surgeons</div>
             <button className="btn btn-outline btn-sm btn-block">JOIN OPERATION →</button>
@@ -1573,7 +1656,7 @@ function Multiplayer({ user }) {
             </div>
           ))}
         </div>
-        <button className="btn btn-outline btn-sm" style={{margin:15}} onClick={() => setView('lobby')}>← ABANDON MISSION</button>
+        <button className="btn btn-outline btn-sm" style={{margin:15}} onClick={leaveRoom}>← ABANDON MISSION</button>
       </div>
 
       {/* CENTER: SIMULATION */}
