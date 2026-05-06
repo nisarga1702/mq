@@ -1335,17 +1335,17 @@ function Multiplayer({ user }) {
 
   function createHumanoid(color, isPatient = false) {
     const group = new THREE.Group();
-    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.3, 0.7, 4, 8), new THREE.MeshStandardMaterial({ color }));
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.3*2 + 0.7, 8), new THREE.MeshStandardMaterial({ color }));
     torso.position.y = 0.6; group.add(torso);
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), new THREE.MeshStandardMaterial({ color: 0xffdbac }));
     head.position.y = 1.15; group.add(head);
-    const armL = new THREE.Mesh(new THREE.CapsuleGeometry(0.08, 0.5, 4, 8), new THREE.MeshStandardMaterial({ color }));
+    const armL = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.08*2 + 0.5, 8), new THREE.MeshStandardMaterial({ color }));
     armL.position.set(-0.4, 0.7, 0); group.add(armL);
-    const armR = new THREE.Mesh(new THREE.CapsuleGeometry(0.08, 0.5, 4, 8), new THREE.MeshStandardMaterial({ color }));
+    const armR = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.08*2 + 0.5, 8), new THREE.MeshStandardMaterial({ color }));
     armR.position.set(0.4, 0.7, 0); group.add(armR);
-    const legL = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.6, 4, 8), new THREE.MeshStandardMaterial({ color }));
+    const legL = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.1*2 + 0.6, 8), new THREE.MeshStandardMaterial({ color }));
     legL.position.set(-0.15, 0.1, 0); group.add(legL);
-    const legR = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.6, 4, 8), new THREE.MeshStandardMaterial({ color }));
+    const legR = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.1*2 + 0.6, 8), new THREE.MeshStandardMaterial({ color }));
     legR.position.set(0.15, 0.1, 0); group.add(legR);
     if(isPatient) group.rotation.x = -Math.PI/2;
     // Fallback if CapsuleGeometry fails (added by previous fix scripts)
