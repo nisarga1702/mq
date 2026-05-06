@@ -1298,7 +1298,8 @@ function Multiplayer({ user }) {
   const [view, setView] = React.useState('lobby');
   const [roomId, setRoomId] = React.useState('main-theater');
   const [players, setPlayers] = React.useState([]);
-  const [vitals, setVitals] = React.useState({ hr: 75, bp: '118/78', spo2: 98, status: 'STABLE' });
+  const [vitals, setVitals] = React.useState({ hr: 92, sysBP: 130, diaBP: 85, spo2: 96, status: 'STABLE' });
+  const vitalsRef = React.useRef({ hr: 92, sysBP: 130, diaBP: 85, spo2: 96, status: 'STABLE' });
   const [progress, setProgress] = React.useState(0);
   const [gameState, setGameState] = React.useState('ACTIVE'); 
   const [history, setHistory] = React.useState([]);
@@ -1342,6 +1343,42 @@ function Multiplayer({ user }) {
 
     return () => { skt.disconnect(); };
   }, []); // empty deps — socket lives for the lifetime of the Multiplayer component
+
+  // ── Passive deterioration: vitals drift naturally toward crisis over time ──
+  React.useEffect(() => {
+    if (view !== 'room') return;
+    const tick = setInterval(() => {
+      setVitals(v => {
+        if (gameState !== 'ACTIVE') return v;
+        // HR drifts up (tachycardia from blood loss/stress)
+        const hrDrift = (Math.random() - 0.3) * 1.5;               // biased upward
+        const newHr = Math.max(20, Math.min(220, v.hr + hrDrift));
+        // SpO2 slowly drops (respiratory compromise)
+        const spo2Drop = 0.08 + Math.random() * 0.07;              // ~0.08-0.15 per tick
+        const newSpo2 = Math.max(50, v.spo2 - spo2Drop);
+        // BP: systolic drops (haemorrhage), diastolic narrows
+        const sysDrift = (Math.random() - 0.6) * 1.2;              // biased downward
+        const diaDrift = (Math.random() - 0.55) * 0.8;
+        const newSys = Math.max(50, Math.min(200, v.sysBP + sysDrift));
+        const newDia = Math.max(30, Math.min(130, v.diaBP + diaDrift));
+        const newStatus =
+          newSpo2 < 85 || newHr > 160 || newHr < 35 || newSys < 70
+            ? 'CRITICAL'
+            : newSpo2 < 92 || newHr > 130 || newSys < 90
+            ? 'UNSTABLE'
+            : 'STABLE';
+        const next = { hr: newHr, sysBP: newSys, diaBP: newDia, spo2: newSpo2, status: newStatus };
+        vitalsRef.current = next;
+        return next;
+      });
+      // Check lose condition from ref (avoids stale closure)
+      const v = vitalsRef.current;
+      if (v.spo2 < 60 || v.hr > 200 || v.hr < 20 || v.sysBP < 55) {
+        setGameState(gs => gs === 'ACTIVE' ? 'LOST' : gs);
+      }
+    }, 2000); // tick every 2 s
+    return () => clearInterval(tick);
+  }, [view, gameState]);
 
   // ── Fetch active rooms periodically ──
   React.useEffect(() => {
@@ -1505,16 +1542,54 @@ function Multiplayer({ user }) {
     setPlayers([]);
   }
 
+  // Action-specific vital effects (medically logical)
+  const ACTION_EFFECTS = {
+    // Doctor tools
+    vitals:    { hrD:0,    spo2D:0,    sysD:0,    diaD:0,    prog:2,  good:true,  note:'Vitals assessed — baseline recorded' },
+    epi:       { hrD:+18,  spo2D:+1,   sysD:+22,  diaD:+8,   prog:3,  good:true,  note:'Epinephrine → HR ↑, BP ↑' },
+    defib:     { hrD:-25,  spo2D:+2,   sysD:+10,  diaD:+4,   prog:5,  good:true,  note:'Defibrillation → rhythm restored' },
+    test:      { hrD:-1,   spo2D:0,    sysD:-1,   diaD:0,    prog:2,  good:true,  note:'Diagnostic ordered' },
+    // Surgeon tools
+    incision:  { hrD:+8,   spo2D:-1,   sysD:-8,   diaD:-3,   prog:6,  good:true,  note:'Incision — controlled entry' },
+    suture:    { hrD:-5,   spo2D:+1,   sysD:+6,   diaD:+2,   prog:7,  good:true,  note:'Suture → haemostasis improving' },
+    hemo:      { hrD:-8,   spo2D:+2,   sysD:+12,  diaD:+5,   prog:6,  good:true,  note:'Haemostasis → bleeding controlled' },
+    suction:   { hrD:-2,   spo2D:+3,   sysD:+4,   diaD:+1,   prog:3,  good:true,  note:'Suction → field cleared' },
+    // Anaesthetic tools
+    intubate:  { hrD:-6,   spo2D:+8,   sysD:-5,   diaD:-3,   prog:5,  good:true,  note:'Intubation → airway secured, SpO₂ ↑' },
+    propofol:  { hrD:-12,  spo2D:-2,   sysD:-15,  diaD:-8,   prog:3,  good:true,  note:'Propofol → sedation, BP ↓ mild' },
+    oxygen:    { hrD:-4,   spo2D:+6,   sysD:+5,   diaD:+2,   prog:4,  good:true,  note:'Supplemental O₂ → SpO₂ ↑' },
+    mon:       { hrD:0,    spo2D:0,    sysD:0,    diaD:0,    prog:2,  good:true,  note:'Continuous monitoring active' },
+    // Intern tools
+    iv:        { hrD:-3,   spo2D:+1,   sysD:+10,  diaD:+4,   prog:4,  good:true,  note:'IV fluid → volume resuscitation, BP ↑' },
+    gauze:     { hrD:-2,   spo2D:+1,   sysD:+3,   diaD:+1,   prog:3,  good:true,  note:'Gauze applied — compression haemostasis' },
+    retract:   { hrD:+1,   spo2D:0,    sysD:-2,   diaD:0,    prog:2,  good:true,  note:'Retractor placed' },
+    clean:     { hrD:0,    spo2D:0,    sysD:0,    diaD:0,    prog:2,  good:true,  note:'Field cleaned — infection risk ↓' },
+  };
+
   function sendAction(action) {
     if (gameState !== 'ACTIVE') return;
-    const isGood = Math.random() > 0.3;
-    const newProgress = Math.min(100, progress + (isGood ? 4 : 1));
-    const newHr = vitals.hr + (isGood ? -2 : 6);
-    setHistory(p => [...p, { user: user.name, action, time: new Date().toLocaleTimeString(), classification: isGood ? 'OK' : 'DANGER' }]);
+    const fx = ACTION_EFFECTS[action] || { hrD:0, spo2D:0, sysD:0, diaD:0, prog:2, good:true, note:action };
+    // Apply jitter for realism
+    const jitter = () => (Math.random() - 0.5) * 2;
+    setVitals(v => {
+      const newHr   = Math.max(20, Math.min(220, v.hr   + fx.hrD   + jitter()));
+      const newSpo2 = Math.max(50, Math.min(100, v.spo2 + fx.spo2D + jitter() * 0.5));
+      const newSys  = Math.max(50, Math.min(200, v.sysBP + fx.sysD + jitter()));
+      const newDia  = Math.max(30, Math.min(130, v.diaBP + fx.diaD + jitter() * 0.5));
+      const newStatus =
+        newSpo2 < 85 || newHr > 160 || newHr < 35 || newSys < 70
+          ? 'CRITICAL'
+          : newSpo2 < 92 || newHr > 130 || newSys < 90
+          ? 'UNSTABLE'
+          : 'STABLE';
+      const next = { hr: newHr, sysBP: newSys, diaBP: newDia, spo2: newSpo2, status: newStatus };
+      vitalsRef.current = next;
+      return next;
+    });
+    const newProgress = Math.min(100, progress + fx.prog);
     setProgress(newProgress);
-    setVitals(v => ({ ...v, hr: newHr, status: newHr > 150 ? 'CRITICAL' : newHr < 40 ? 'CRITICAL' : 'STABLE' }));
+    setHistory(p => [...p, { user: user.name, action: fx.note, time: new Date().toLocaleTimeString(), classification: fx.good ? 'OK' : 'DANGER' }]);
     if (newProgress >= 100) setGameState('WON');
-    else if (newHr > 190 || newHr < 25) setGameState('LOST');
     setCmdText('');
   }
 
@@ -1637,7 +1712,7 @@ function Multiplayer({ user }) {
           <div style={{fontSize:100, marginBottom:20}}>{gameState==='WON'?'🏆':'🛑'}</div>
           <h1 style={{fontSize:54, fontWeight:800, color:gameState==='WON'?'var(--success)':'var(--danger)', marginBottom:10, textAlign:'center'}}>{gameState==='WON'?'MISSION SUCCESS':'MISSION FAILED'}</h1>
           <p style={{fontSize:20, color:'var(--text2)', marginBottom:30, textAlign:'center'}}>{gameState==='WON'?'The patient has been successfully stabilized. Excellent clinical performance!':'The patient was lost. Review the logs to identify the point of failure.'}</p>
-          <button className="btn btn-primary btn-lg" onClick={() => { setGameState('ACTIVE'); setProgress(0); setVitals({ hr: 75, bp: '118/78', spo2: 98, status: 'STABLE' }); setHistory([]); }}>RETRY OPERATION</button>
+          <button className="btn btn-primary btn-lg" onClick={() => { setGameState('ACTIVE'); setProgress(0); setVitals({ hr: 92, sysBP: 130, diaBP: 85, spo2: 96, status: 'STABLE' }); vitalsRef.current = { hr: 92, sysBP: 130, diaBP: 85, spo2: 96, status: 'STABLE' }; setHistory([]); }}>RETRY OPERATION</button>
         </div>
       )}
 
@@ -1661,11 +1736,27 @@ function Multiplayer({ user }) {
 
       {/* CENTER: SIMULATION */}
       <div style={{display:'flex', flexDirection:'column', gap:12}}>
-        <div style={{background:'#000', borderRadius:12, padding:15, display:'grid', gridTemplateColumns:'repeat(4,1fr)', border:'2px solid #1e293b'}}>
-          <div><div style={{fontSize:10,color:'#f43f5e',fontWeight:800}}>HR</div><div style={{fontSize:28,color:'#f43f5e',fontFamily:'monospace',fontWeight:800}}>{vitals.hr}</div></div>
-          <div><div style={{fontSize:10,color:'#10b981',fontWeight:800}}>BP</div><div style={{fontSize:24,color:'#10b981',fontFamily:'monospace',fontWeight:800}}>{vitals.bp}</div></div>
-          <div><div style={{fontSize:10,color:'#3b82f6',fontWeight:800}}>O2</div><div style={{fontSize:24,color:'#3b82f6',fontFamily:'monospace',fontWeight:800}}>{vitals.spo2}%</div></div>
-          <div style={{textAlign:'right'}}><div style={{fontSize:12,color:vitals.status==='CRITICAL'?'var(--danger)':'var(--success)',fontWeight:800}}>{vitals.status}</div><div style={{fontSize:10,color:'var(--text3)'}}>LIVE FEED</div></div>
+        <div style={{background:'#000', borderRadius:12, padding:15, display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, border:'2px solid #1e293b'}}>
+          <div>
+            <div style={{fontSize:10,color:'#f43f5e',fontWeight:800,letterSpacing:1}}>HR <span style={{fontWeight:400,opacity:0.6}}>bpm</span></div>
+            <div style={{fontSize:28,color:'#f43f5e',fontFamily:'monospace',fontWeight:800}}>{Math.round(vitals.hr)}</div>
+            <div style={{height:3,background:'rgba(244,63,94,0.2)',borderRadius:2,marginTop:4}}><div style={{height:'100%',width:`${Math.min(100,(vitals.hr/220)*100)}%`,background:'#f43f5e',borderRadius:2,transition:'width 0.5s'}}/></div>
+          </div>
+          <div>
+            <div style={{fontSize:10,color:'#10b981',fontWeight:800,letterSpacing:1}}>BP <span style={{fontWeight:400,opacity:0.6}}>mmHg</span></div>
+            <div style={{fontSize:22,color:vitals.sysBP<90?'#f87171':'#10b981',fontFamily:'monospace',fontWeight:800}}>{Math.round(vitals.sysBP)}/{Math.round(vitals.diaBP)}</div>
+            <div style={{height:3,background:'rgba(16,185,129,0.2)',borderRadius:2,marginTop:4}}><div style={{height:'100%',width:`${Math.min(100,(vitals.sysBP/200)*100)}%`,background:'#10b981',borderRadius:2,transition:'width 0.5s'}}/></div>
+          </div>
+          <div>
+            <div style={{fontSize:10,color:'#3b82f6',fontWeight:800,letterSpacing:1}}>SpO₂ <span style={{fontWeight:400,opacity:0.6}}>%</span></div>
+            <div style={{fontSize:28,color:vitals.spo2<92?vitals.spo2<85?'#f43f5e':'#fbbf24':'#3b82f6',fontFamily:'monospace',fontWeight:800}}>{vitals.spo2.toFixed(1)}</div>
+            <div style={{height:3,background:'rgba(59,130,246,0.2)',borderRadius:2,marginTop:4}}><div style={{height:'100%',width:`${Math.min(100,((vitals.spo2-50)/50)*100)}%`,background:vitals.spo2<85?'#f43f5e':vitals.spo2<92?'#fbbf24':'#3b82f6',borderRadius:2,transition:'width 0.5s'}}/></div>
+          </div>
+          <div style={{textAlign:'right'}}>
+            <div style={{fontSize:11,color:vitals.status==='CRITICAL'?'#f43f5e':vitals.status==='UNSTABLE'?'#fbbf24':'#10b981',fontWeight:800,marginBottom:4}}>{vitals.status}</div>
+            <div style={{fontSize:9,color:'var(--text3)'}}>LIVE FEED</div>
+            <div style={{marginTop:6,fontSize:9,color:'var(--text3)'}}>SpO₂ {vitals.spo2<85?'⚠ HYPOXIA':vitals.spo2<92?'⚠ LOW':''}</div>
+          </div>
         </div>
         
         <div ref={canvasRef} style={{flex:1, background:'#000', borderRadius:12, overflow:'hidden', border:'1px solid #1e293b', position:'relative'}}>
